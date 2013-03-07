@@ -151,13 +151,13 @@ object ApacheFFT extends FFT {
       real(i0) = srcR0 + srcR1 + srcR2 + srcR3
       imag(i0) = srcI0 + srcI1 + srcI2 + srcI3
 
-	  real(i1) = srcR0 - srcR2 + (srcI1 - srcI3)
+	    real(i1) = srcR0 - srcR2 + (srcI1 - srcI3)
       imag(i1) = srcI0 - srcI2 + (srcR3 - srcR1)
 
       real(i2) = srcR0 - srcR1 + srcR2 - srcR3
       imag(i2) = srcI0 - srcI1 + srcI2 - srcI3
       
-	  real(i3) = srcR0 - srcR2 + (srcI3 - srcI1)
+	    real(i3) = srcR0 - srcR2 + (srcI3 - srcI1)
       imag(i3) = srcI0 - srcI2 + (srcR1 - srcR3)
       
       i0 += 4
@@ -222,14 +222,14 @@ After 1000 iterations, it takes an average of ~ 0.19 ms per fft call.
 
 The following table shows a side-by-side comparison of both algorithms.  The times in these tables were averaged from 1000 iterations on increasing frame sizes.
 
- Size | Recursive Time (ms) | Imperative Time (ms) 
- ---- | ------------------: | -------------------: 
- 512  | 1.56                | 0.14                 
- 1024 | 2.98                | 0.19                 
- 2048 | 6.04                | 0.27                 
- 4096 | 13.18               | 0.47                 
+ Frame Size | Recursive Time (ms) | Imperative Time (ms) 
+ ---------- | ------------------: | -------------------: 
+ 512        | 1.56                | 0.14                 
+ 1024       | 2.98                | 0.19                 
+ 2048       | 6.04                | 0.27                 
+ 4096       | 13.18               | 0.47                 
  &nbsp;
 
  The imperative algorithm is clearly faster, but much more verbose and harder to understand.
 
- Scala gets knocked sometimes for allowing both OO/imperative and functional styles of coding.  In my opinion this is actually a huge benefit for the language.  In this example, we have an imperative algorithm that is highly optimized but the details of this are hidden.  Our FFT function is still referentially transparent to any users of the function.
+ Scala gets knocked sometimes for allowing both OO/imperative and functional styles of coding.  In my opinion this is actually a huge benefit for the language.  You can favor the functional style and resort to imperative code in cases where performance is critical.  These cases can be isolated and the details can be hidden.  Looking at our imperative algorithm above, the FFT is still referentially transparent.
