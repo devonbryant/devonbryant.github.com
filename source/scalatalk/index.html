@@ -16,6 +16,7 @@
 
 		<link rel="stylesheet" href="css/reveal.min.css">
 		<link rel="stylesheet" href="css/theme/default.css" id="theme">
+		<!-- <link rel="stylesheet" href="css/theme/beige.css" id="theme"> -->
 
 		<!-- For syntax highlighting -->
 		<link rel="stylesheet" href="lib/css/zenburn.css">
@@ -50,12 +51,12 @@
 						</tr>
 					</table>
 					<ul>
-						<li>At ISS</li>
+						<li>Weekdays</li>
 						<ul>
-							<li>Advanced Technology Division for 7+ years</li>
+							<li>ISS/ATD for 7+ years</li>
 							<li>Predictive Analytics, Machine Learning, Anomaly Detection, Plan Monitoring</li>
 						</ul>
-						<li>Outside Work</li>
+						<li>Evenings & Weekends</li>
 						<ul>
 							<li>Graduate Student at UCCS</li>
 							<li>Music Information Retrieval, Functional Programming
@@ -68,10 +69,144 @@
 					<h2>What is Scala?</h2>
 					<ul>
 						<li><u>Sca</u>lable <u>La</u>nguage</li>
+						<li>Created by Martin Odersky</li>
+						<li>JVM-based</li>
 						<li>OO-Functional hybrid</li>
 						<li>Statically-Typed</li>
 					</ul>
 				</section>
+
+				<section>
+					<section>
+						<h2>Who's Using It?</h2>
+						*ISS, Twitter, LinkedIn, Foursquare, Tumblr, Amazon, Intel, IBM, Sony, Bank of America, eBay, Novell, etc.
+					</section>
+					<section>
+						<img src="http://sogrady-media.redmonk.com/sogrady/files/2013/02/lang-rank-Q113-big.png" height="600"></img>
+					</section>
+					<section>
+						<img src="http://www.indeed.com/trendgraph/jobgraph.png?q=scala%2C+java%2C+ruby%2C+python%2C+clojure&relative=1"</img>
+					</section>
+				</section>
+
+				<section>
+					<h1>The Short</h1>
+				</section>
+
+				<section>
+					<section>
+						<h2>More Expressive, Less Boilerplate</h2>
+						<ul>
+							<li>1/2 - 1/3 equivalent Java</li>
+							<li>Type Inference</li>
+							<li>Every Value is an Object</li>
+							<li>Every Expression has a Type</li>
+						</ul>
+					</section>
+					<section>
+						<h5>How many times have you written a data class like this?</h5>
+						<pre class="java"><code data-trim contenteditable>
+public class Person {
+    private final String first;
+    private final String surname;
+    private final int age;
+	
+    public Person(String first, String surname, int age) {
+        this.first = first;
+        this.surname = surname;
+        this.age = age;
+    }
+
+    public String getFirst() {
+        return first;
+    }
+
+    public String getSurname() {
+        return surname;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + age;
+        result = prime * result + ((first == null) ? 0 : first.hashCode());
+        result = prime * result + ((surname == null) ? 0 : surname.hashCode());
+        return result;
+    }
+
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Person other = (Person) obj;
+        if (age != other.age)
+            return false;
+        if (first == null) {
+            if (other.first != null)
+                return false;
+        }
+        else if (!first.equals(other.first))
+            return false;
+        if (surname == null) {
+            if (other.surname != null)
+                return false;
+        }
+        else if (!surname.equals(other.surname))
+            return false;
+        return true;
+    }
+
+    public String toString() {
+        return "Person [first=" + first + ", surname=" + surname + ", age=" + age + "]";
+    }
+}
+						</code></pre>
+					</section>
+					<section>
+						<h5>Here's the equivalent Scala code</h5>
+						<pre class="scala"><code data-trim contenteditable>
+case class Person(first: String, surname: String, age: Int)
+						</code></pre>
+					</section>
+					<section>
+						<h5>Let's look at some simple examples</h5>
+						Java
+						<pre class="java"><code data-trim contenteditable>
+public Person older(Person a, Person b) {
+    if (a.getAge() >= b.getAge())
+        return a;
+    else
+        return b;
+}
+
+final Person elder = older(new Person("Jon", "Snow", 14), 
+                           new Person("Arya", "Stark", 9));
+						</code></pre>
+						Scala
+						<pre class="scala"><code data-trim contenteditable>
+def older(a: Person, b: Person) = 
+  if (a.age >= b.age) a else b
+
+val elder = older(Person("Jon", "Snow", 14), 
+                  Person("Arya", "Stark", 9))
+						</code></pre>
+					</section>
+				</section>
+
+				<section>
+					<section>
+
+					</section>
+				</section>
+
+				<!-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END OF SLIDES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
 
 				<section>
 					<h2>Heads Up</h2>
