@@ -79,30 +79,32 @@
 				<section>
 					<section>
 						<h2>Who's Using It?</h2>
-						*ISS, Twitter, LinkedIn, Foursquare, Tumblr, Amazon, Intel, IBM, Sony, Bank of America, eBay, Novell, etc.
-					</section>
-					<section>
-						<img src="http://sogrady-media.redmonk.com/sogrady/files/2013/02/lang-rank-Q113-big.png" height="600"></img>
+						*ISS, Twitter, LinkedIn, Foursquare, Meetup, Tumblr, Amazon, Intel, IBM, Sony, Bank of America, eBay, Novell, etc.
 					</section>
 					<section>
 						<img src="http://www.indeed.com/trendgraph/jobgraph.png?q=scala%2C+java%2C+ruby%2C+python%2C+clojure&relative=1"</img>
+					</section>
+					<section>
+						<img src="./images/lang-rank.png" height="700"></img>
 					</section>
 				</section>
 
 				<section>
 					<h1>The Short</h1>
+					<img src="./images/tyrion.jpg"/>
 				</section>
 
 				<section>
-					<section>
-						<h2>More Expressive, Less Boilerplate</h2>
-						<ul>
-							<li>1/2 - 1/3 equivalent Java</li>
-							<li>Type Inference</li>
-							<li>Every Value is an Object</li>
-							<li>Every Expression has a Type</li>
-						</ul>
-					</section>
+					<h2>More Expressive, Less Boilerplate</h2>
+					<ul>
+						<li>1/2 - 1/3 equivalent Java</li>
+						<li>Type Inference</li>
+						<li>Every Value is an Object</li>
+						<li>Every Expression has a Type</li>
+					</ul>
+				</section>
+
+				<section>
 					<section>
 						<h5>How many times have you written a data class like this?</h5>
 						<pre class="java"><code data-trim contenteditable>
@@ -186,24 +188,293 @@ public Person older(Person a, Person b) {
         return b;
 }
 
-final Person elder = older(new Person("Jon", "Snow", 14), 
-                           new Person("Arya", "Stark", 9));
+final Person jon = new Person("Jon", "Snow", 14);
+final Person arya = new Person("Arya", "Stark", 9);
+Person elder = older(jon, arya);
 						</code></pre>
 						Scala
 						<pre class="scala"><code data-trim contenteditable>
 def older(a: Person, b: Person) = 
   if (a.age >= b.age) a else b
 
-val elder = older(Person("Jon", "Snow", 14), 
-                  Person("Arya", "Stark", 9))
+val jon = Person("Jon", "Snow", 14)
+val arya = Person("Arya", "Stark", 9)
+var elder = older(jon, arya)
 						</code></pre>
 					</section>
 				</section>
 
 				<section>
 					<section>
-
+						<h2>Imperative vs. Functional</h2>
+						<blockquote>
+							"Thinking in Time vs. Thinking in Space"
+						</blockquote>
 					</section>
+					<section>
+						<h3>Thinking in Time</h3>
+						<pre class="java"><code data-trim contenteditable>
+List&ltPerson&gt characters = new ArrayList&ltPerson&gt();
+characters.add(new Person("Robb", "Stark", 14));
+characters.add(new Person("Jon", "Snow", 14));
+characters.add(new Person("Arya", "Stark", 9));
+
+List&ltString&gt starks = new ArrayList&ltString&gt();
+for (Person character : characters) {
+    if (character.getSurname().equals("Stark")) {
+        starks.add(character.getFirst() + " " + character.getSurname());
+    }
+}
+						</code></pre>
+					</section>
+					<section>
+						<h3>Thinking in Space</h3>
+						<pre class="scala"><code data-trim contenteditable>
+val characters = List(Person("Robb", "Stark", 14),
+                      Person("Jon", "Snow", 14),
+                      Person("Arya", "Stark", 9))
+
+val starks = 
+  characters.filter(_.surname == "Stark").map(
+    c => c.first + " " + c.surname) 
+
+// starks: List[String] = List(Robb Stark, Arya Stark)
+						</code></pre>
+						or
+						<pre class="scala"><code data-trim contenteditable>
+val starks = for {
+  c <- characters if c.surname == "Stark"
+} yield (c.first + " " + c.surname)
+						</code></pre>
+						or
+						<pre class="scala"><code data-trim contenteditable>
+val starks = characters collect {
+  case Person(first, "Stark", _) => first + " Stark"
+}
+						</code></pre>
+					</section>
+				</section>
+
+				<section>
+					<h1>The Sweet</h1>
+					<img src="./images/sansa.jpg"/>
+				</section>
+
+				<section>
+					<h2>The Functional Side of Scala</h2>
+					<ul>
+						<li>Immutable Data Structures</li>
+						<li>Higher-Order Functions</li>
+						<li>Pattern Matching</li>
+						<li>Type Classes</li>
+					</ul>
+				</section>
+
+				<section>
+					<section>
+						<h2>Why Immutable Data?</h2>
+						<ul>
+							<li>Programming Without Side-Effects</li>
+							<li>Referential Transparency</li>
+						</ul>
+					</section>
+					<section>
+						What are the states of each object afterwards?<br><br>
+						<pre class="java"><code data-trim contenteditable>
+public &ltT&gt List&ltT&gt concat(List&ltT&gt a, List&ltT&gt b) {
+    a.addAll(b);
+    return a;
+}
+
+List&ltString&gt ab = list("a", "b"); // assume this creates a new ArrayList
+List&ltString&gt cd = list("c", "d");
+List&ltString&gt abcd = concat(ab, cd);
+						</code></pre>
+						<br>What if we call <i>concat(ab, cd)</i> again?
+					</section>
+					<section>
+						<h3>Default Scala Collections are Immutable</h3>
+						<pre class="scala"><code data-trim contenteditable>
+val ab = List("a", "b")  // ab:   List[String] = List(a, b)
+val cd = List("c", "d")  // cd:   List[String] = List(c, d)
+val abcd = ab ++ cd      // abcd: List[String] = List(a, b, c, d)
+val abc = ab :+ "c"      // abc:  List[String] = List(a, b, c)
+val bcd = "b" :: cd      // bcd:  List[String] = List(b, c, d)
+
+val ints = Set(1,2,3)    // ints: Set[Int] = Set(1, 2, 3)
+val sub2 = ints - 2      // sub2: Set[Int] = Set(1, 3)
+val add4 = ints + 4      // add4: Set[Int] = Set(1, 2, 3, 4)
+						</code></pre>
+					</section>
+					<section>
+						<ul>
+							<li>Immutable data helps with referential transparency</li>
+							<li>Immutable structures favor recursion</li>
+						</ul>
+						<br/><br/>
+						<pre class="scala"><code data-trim contenteditable>
+// A naive concatenation example using immutable lists
+
+def concat[A](as: List[A], bs: List[A]): List[A] = {
+  if (as == Nil) bs
+  else as.head :: concat(as.tail, bs)
+}
+						</code></pre>
+						<small>
+							* For those interested in persistent/immutable data structures:<br/>
+							<a href="http://www.amazon.com/Purely-Functional-Structures-Chris-Okasaki/dp/0521663504">Purely Functional Data Structures</a> by Chris Okasaki
+						</small>
+					</section>
+				</section>
+
+				<section>
+					<h2>Pattern Matching</h2>
+					<ul>
+						<li>Type Testing</li>
+						<li>Destructuring with arbitrary depth</li>
+						<li>Constants, Wildcards, Variables, Constructors, Sequences, Types, etc.</li>
+					</ul>
+				</section>
+
+				<section>
+					<section>
+						<pre class="scala"><code data-trim contenteditable>
+def crazyMatch(x: Any) = x match {
+  case "hello" => "The string 'hello'"
+  case num: Int if (num > 2) => "A number greater than two"
+  case Person(name, "Lannister", _) => "A Lannister named " + name
+  case List(a, _, _) => "A list of size 3 starting with " + a
+  case _ => "I'm not sure"
+}
+
+crazyMatch("hello")                           // The string 'hello'
+crazyMatch(5)                                 // A number greater than two
+crazyMatch(Person("Cersei", "Lannister", 33)) // A Lannister named Cersei
+crazyMatch(List(1,2,3))                       // A list of size 3 starting with 1
+crazyMatch("blah")                            // String = I'm not sure
+						</code></pre>
+					</section>
+					<section>
+						Our own immutable <strike>Binary Search</strike> ... <i>Family</i> Tree
+						<pre class="scala"><code data-trim contenteditable>
+sealed trait FamilyTree[+A]
+case class Member[+A](member: A,
+                      mother: FamilyTree[A] = End,
+                      father: FamilyTree[A] = End) extends FamilyTree[A]
+case object End extends FamilyTree[Nothing]
+						</code></pre>
+					</section>
+					<section>
+						!! INSERT TREE PIC HERE !!
+						<pre class="scala"><code data-trim contenteditable>
+val tywin = Person("Tywin", "Lannister", 56)
+...
+val robert = Person("Robert", "Baratheon", 35)
+val joffrey = Person("Joffrey", "Lannister", 13)
+
+val tywinTree = Member(tywin)
+val joannaTree = Member(joanna)
+val jaimeTree = Member(jaime, joannaTree, tywinTree)
+val cerseiTree = Member(cersei, joannaTree, tywinTree)
+val robertTree = Member(robert)
+val joffreyTree = Member(joffrey, cerseiTree, robertTree)
+						</code></pre>
+					</section>
+					<section>
+						A mix of pattern matching & recursion
+						<pre class="scala"><code data-trim contenteditable>
+def replace[A](tree: FamilyTree[A], 
+               repTree: FamilyTree[A], 
+               newTree: FamilyTree[A]): FamilyTree[A] = tree match {
+  case End => End
+  case Member(m, mother, father) =>
+    if (mother == repTree) Member(m, newTree, father)
+    else if (father == repTree) Member(m, mother, newTree)
+    else Member(m, 
+                replace(mother, repTree, newTree), 
+                replace(father, repTree, newTree))
+}
+
+// Let's fix the family tree
+val tree = replace(joffreyTree, robertTree, jaimeTree)
+						</code></pre>
+					</section>
+				</section>
+
+				<section>
+					<h2>Higher-Order Functions</h2>
+
+					Taking functions as input or returning functions as output
+					<br/><br/>
+					<blockquote cite="http://steve-yegge.blogspot.com/2006/03/execution-in-kingdom-of-nouns.html">
+						"Verbs in Javaland are responsible for all the work, but as they are held in contempt by all, no Verb is ever permitted to wander about freely. If a Verb is to be seen in public at all, it must be escorted at all times by a Noun." - Steve Yegge, Execution in the Kingdom of Nouns
+					</blockquote>
+					<br/>
+					* Watch many of your favorite GOF patterns dissappear
+				</section>
+
+				<section>
+					<section>
+						<h3>Functions as inputs, extending our family tree</h3>
+						<pre class="scala"><code data-trim contenteditable>
+sealed trait FamilyTree[+A] {
+  def map[B](f: A => B): FamilyTree[B]
+}
+
+case class Member[+A](...) extends FamilyTree[A] {
+  override def map[B](f: A => B) =
+    Member(f(member), mother.map(f), father.map(f))
+}
+						</code></pre>
+						<pre class="scala"><code data-trim contenteditable>
+val agedByOne = joffreyTree map { p => 
+  Person(p.first, p.surname, p.age + 1)
+}
+
+val treeOfNames1 = joffreyTree map { _.first } 
+// or
+val treeOfNames2 = joffreyTree.map(_.first)
+						</code></pre>
+					</section>
+					<section>
+						<h3>Some examples from core Scala Collections</h3>
+						<pre class="scala"><code data-trim contenteditable>
+List(1,2,3) map { _ + "s" }             // List(1s, 2s, 3s)
+List(1,2,3) filter { _ > 1 }            // List(2, 3)
+List(1,2,3) foreach { print(_) }        // 123
+List(1,2,3) exists { _ == 2 }           // true
+List(1,2,3) takeWhile { _ < 3 }         // List(1, 2)
+List(1,2,3) span { _ < 3 }              // List(1, 2), List(3)
+List(1,2,3) flatMap { i => List(i, i) } // List(1, 1, 2, 2, 3, 3)
+						</code></pre>
+					</section>
+					<section>
+						<h3>Functions as outputs and currying</h3>
+						<pre class="scala"><code data-trim contenteditable>
+def fold[A, B](tree: FamilyTree[A])(z: B)(f: (A, B, B) => B): B = {
+  tree match {
+    case End => z
+    case Member(a, mother, father) => 
+      f(a, fold(mother)(z)(f), fold(father)(z)(f))
+  }
+}
+
+// Silly example to demonstrate returning functions and currying
+def boundTreeInit[A, B](tree: FamilyTree[A], z: B): ((A, B, B) => B) => B = 
+  fold(tree)(z)
+						</code></pre>
+						And some examples...
+						<pre class="scala"><code data-trim contenteditable>
+val max = (a: Int, b: Int) => if (a > b) a else b
+val lannisterFunction = boundTreeInit(joffreyTree, 0)
+val maxAge = lannisterFunction((p, a, b) => max(p.age, max(a, b)))
+val sumAge = lannisterFunction((p, a, b) => p.age + a + b)
+						</code></pre>
+					</section>
+				</section>
+				<section>
+					<h1>The Ugly</h1>
+					<img src="./images/frey.jpg"/>
 				</section>
 
 				<!-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END OF SLIDES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
