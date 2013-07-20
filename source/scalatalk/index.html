@@ -44,6 +44,13 @@
 				</section>
 
 				<section>
+					<h3>If you want to follow along</h3>
+					Slides: <a href="http://devonbryant.github.io/scalatalk">devonbryant.github.io/scalatalk</a>
+					<br/>
+					Examples: <a href="http://github.com/devonbryant/scalatalk-examples">github.com/devonbryant/scalatalk-examples</a>
+				</section>
+
+				<section>
 					<table width="100%">
 						<tr>
 							<td style="vertical-align:middle"><h2>About Me</h2></td>
@@ -178,7 +185,7 @@ case class Person(first: String, surname: String, age: Int)
 						</code></pre>
 					</section>
 					<section>
-						<h5>Let's look at some simple examples</h5>
+						<h5>A few simple syntax examples</h5>
 						Java
 						<pre class="java"><code data-trim contenteditable>
 public Person older(Person a, Person b) {
@@ -264,8 +271,8 @@ val starks = characters collect {
 					<h2>The Functional Side of Scala</h2>
 					<ul>
 						<li>Immutable Data Structures</li>
-						<li>Higher-Order Functions</li>
 						<li>Pattern Matching</li>
+						<li>Higher-Order Functions</li>
 						<li>Type Classes</li>
 					</ul>
 				</section>
@@ -328,44 +335,51 @@ def concat[A](as: List[A], bs: List[A]): List[A] = {
 				</section>
 
 				<section>
-					<h2>Pattern Matching</h2>
-					<ul>
-						<li>Type Testing</li>
-						<li>Destructuring with arbitrary depth</li>
-						<li>Constants, Wildcards, Variables, Constructors, Sequences, Types, etc.</li>
-					</ul>
+					<section>
+						<h2>Pattern Matching</h2>
+						<ul>
+							<li>Type Testing</li>
+							<li>Destructuring with arbitrary depth</li>
+							<li>Constants, Wildcards, Variables, Constructors, Sequences, Types, etc.</li>
+						</ul>
+					</section>
+					<section>
+							<h3>A Kitchen Sink Pattern Match</h3>
+							<pre class="scala"><code data-trim contenteditable>
+def crazyMatch(x: Any) = x match {
+  case "hello" => "The string 'hello'"
+  case num: Int if (num > 2) => "Number greater than two"
+  case Person(name, "Stark", _) => "A Stark named " + name
+  case List(a, _, _) => "List size 3 starts with " + a
+  case _ => "I'm not sure"
+}
+
+crazyMatch("hello")                    // The string 'hello'
+crazyMatch(5)                          // Number greater than two
+crazyMatch(Person("Ned", "Stark", 35)) // A Stark named Ned
+crazyMatch(List(1,2,3))                // List size 3 starts with 1
+crazyMatch("blah")                     // I'm not sure
+						</code></pre>
+					</section>
 				</section>
 
 				<section>
 					<section>
-						<pre class="scala"><code data-trim contenteditable>
-def crazyMatch(x: Any) = x match {
-  case "hello" => "The string 'hello'"
-  case num: Int if (num > 2) => "A number greater than two"
-  case Person(name, "Lannister", _) => "A Lannister named " + name
-  case List(a, _, _) => "A list of size 3 starting with " + a
-  case _ => "I'm not sure"
-}
-
-crazyMatch("hello")                           // The string 'hello'
-crazyMatch(5)                                 // A number greater than two
-crazyMatch(Person("Cersei", "Lannister", 33)) // A Lannister named Cersei
-crazyMatch(List(1,2,3))                       // A list of size 3 starting with 1
-crazyMatch("blah")                            // String = I'm not sure
-						</code></pre>
-					</section>
-					<section>
-						Our own immutable <strike>Binary Search</strike> ... <i>Family</i> Tree
+						<h3>Immutable data structures, pattern matching & recursion</h3>
+						<br/>
+						A <strike>Binary Search</strike> ... <i>Family</i> Tree
 						<pre class="scala"><code data-trim contenteditable>
 sealed trait FamilyTree[+A]
+
 case class Member[+A](member: A,
                       mother: FamilyTree[A] = End,
                       father: FamilyTree[A] = End) extends FamilyTree[A]
+
 case object End extends FamilyTree[Nothing]
 						</code></pre>
 					</section>
 					<section>
-						!! INSERT TREE PIC HERE !!
+						<img src="./images/tree.png"/>
 						<pre class="scala"><code data-trim contenteditable>
 val tywin = Person("Tywin", "Lannister", 56)
 ...
@@ -381,7 +395,8 @@ val joffreyTree = Member(joffrey, cerseiTree, robertTree)
 						</code></pre>
 					</section>
 					<section>
-						A mix of pattern matching & recursion
+						<img src="./images/tree2.png"/><br/>
+						Using pattern matching & recursion
 						<pre class="scala"><code data-trim contenteditable>
 def replace[A](tree: FamilyTree[A], 
                repTree: FamilyTree[A], 
@@ -415,7 +430,7 @@ val tree = replace(joffreyTree, robertTree, jaimeTree)
 
 				<section>
 					<section>
-						<h3>Functions as inputs, extending our family tree</h3>
+						<h3>Functions as Inputs</h3>
 						<pre class="scala"><code data-trim contenteditable>
 sealed trait FamilyTree[+A] {
   def map[B](f: A => B): FamilyTree[B]
@@ -427,13 +442,11 @@ case class Member[+A](...) extends FamilyTree[A] {
 }
 						</code></pre>
 						<pre class="scala"><code data-trim contenteditable>
-val agedByOne = joffreyTree map { p => 
+val oneYearOlder = joffreyTree map { p => 
   Person(p.first, p.surname, p.age + 1)
 }
 
-val treeOfNames1 = joffreyTree map { _.first } 
-// or
-val treeOfNames2 = joffreyTree.map(_.first)
+val treeOfNames = joffreyTree.map(_.first)
 						</code></pre>
 					</section>
 					<section>
@@ -449,7 +462,7 @@ List(1,2,3) flatMap { i => List(i, i) } // List(1, 1, 2, 2, 3, 3)
 						</code></pre>
 					</section>
 					<section>
-						<h3>Functions as outputs and currying</h3>
+						<h3>Functions as output (and currying)</h3>
 						<pre class="scala"><code data-trim contenteditable>
 def fold[A, B](tree: FamilyTree[A])(z: B)(f: (A, B, B) => B): B = {
   tree match {
@@ -460,8 +473,8 @@ def fold[A, B](tree: FamilyTree[A])(z: B)(f: (A, B, B) => B): B = {
 }
 
 // Silly example to demonstrate returning functions and currying
-def boundTreeInit[A, B](tree: FamilyTree[A], z: B): ((A, B, B) => B) => B = 
-  fold(tree)(z)
+def boundTreeInit[A, B](tree: FamilyTree[A], 
+                        z: B): ((A, B, B) => B) => B = fold(tree)(z)
 						</code></pre>
 						And some examples...
 						<pre class="scala"><code data-trim contenteditable>
@@ -470,296 +483,154 @@ val lannisterFunction = boundTreeInit(joffreyTree, 0)
 val maxAge = lannisterFunction((p, a, b) => max(p.age, max(a, b)))
 val sumAge = lannisterFunction((p, a, b) => p.age + a + b)
 						</code></pre>
+						<br/>
+						<small>
+							* <i>Currying</i> is named after mathematician Haskell Curry.  Discovered earlier by Moses Schoenfinkel, but "Shoenfinkelization" wasn't as catchy.
+						</small>
 					</section>
 				</section>
+
+				<section>
+					<h2>Type Classes</h2>
+					<ul>
+						<li>Originally developed in Haskell, more of a pattern in Scala</li>
+						<li>Useful for generic programming</li>
+						<li>Describe behavior <i>outside</i> of existing classes, an open-world interface</li>
+					</ul>
+				</section>
+
+				<section>
+					<section>
+						<h3>An example for Typeclasses</h3>
+						Suppose we want to calculate the <i>mean</i> on a collection of numbers.
+						<pre class="scala"><code data-trim contenteditable>
+def mean(ds: Seq[Double]) = {
+  ds.reduce(_ + _) / ds.size
+}
+						</code></pre>
+						What about Float, BigDecimal, etc.?
+					</section>
+					<section>
+						<h3>Traditional OO</h3>
+						<ul>
+							<li>Create an interface for addable/dividable</li>
+							<ul>
+								<li>What about classes you can't modify (e.g. Float, Double, etc.)?</li>
+							</ul>
+							<li>Use an <i>Adapter</i> pattern</li>
+							<ul>
+								<li>Do you want to write all those conversions/wrappers?</li>
+							</ul>
+						</ul>
+					</section>
+					<section>
+						<h3>Declare a Typeclass</h3>
+						<pre class="scala"><code data-trim contenteditable>
+trait Fractional[T] {
+  def add(a: T, b: T): T
+  def divide(a: T, b: T): T
+  def fromInt(i: Int): T
+}
+						</code></pre>
+						Note the difference between this and traditional inheritance based traits, e.g:
+						<pre class="scala"><code data-trim contenteditable>
+trait Number {
+  def add(a: Number): Number
+  ...
+}
+						</code></pre>
+					</section>
+					<section>
+						<h3>Add Types to the Class</h3>
+						Using Scala's <i>implicit</i> system
+						<pre class="scala"><code data-trim contenteditable>
+object Fractional {
+
+  implicit object doubleIsFractional extends Fractional[Double] {
+    override def add(a: Double, b: Double) = a + b
+    override def divide(a: Double, b: Double) = a / b
+    override def fromInt(i: Int) = i.toDouble
+  }
+  
+  implicit object floatIsFractional extends Fractional[Float]
+
+  ...
+}
+						</code></pre>
+					</section>
+					<section>
+						<h3>Using the Typeclass</h3>
+						<pre class="scala"><code data-trim contenteditable>
+import Fractional._
+
+def mean[A](as: Seq[A])(implicit frac: Fractional[A]) = {
+  frac.divide(as.reduce(frac.add(_, _)), frac.fromInt(as.size))
+}
+
+mean(List(1.0, 2.0))                     // res0: Double = 1.5
+mean(Vector(1f, 2f))                     // res1: Float = 1.5
+mean(List(BigDecimal(1), BigDecimal(2))) // res2: BigDecimal = 1.5
+						</code></pre>
+						or via context bounds:
+						<pre class="scala"><code data-trim contenteditable>
+def sum[A : Fractional](as: A*) = {
+  as.reduce(implicitly[Fractional[A]].add(_, _))
+}
+
+sum(1.0, 2.0, 3.0) // res0: Double = 6.0
+						</code></pre>
+					</section>
+					<section>
+						<h3>More fun with implicits</h3>
+						<pre class="scala"><code data-trim contenteditable>
+implicit class MeanOps[A : Fractional](lhs: Seq[A]) {
+  def mean() = Fractional.mean(lhs)
+}
+
+List(1.0, 2.0, 3.0).mean                  // res0: Double = 1.5
+Vector(BigDecimal(1), BigDecimal(2)).mean // res1: BigDecimal = 1.5
+						</code></pre>
+						<br/>
+						<small>
+							* For those interested in typeclasses and generic programming in Scala, check out <a href="http://typelevel.org/">Typelevel.org</a>
+						</small>
+					</section>
+					<section>
+						<h3>One Last Example (Bringing it all together)</h3>
+						<pre class="scala"><code data-trim contenteditable>
+def avg[A](tree: FamilyTree[A])(implicit frac: Fractional[A]) = {
+  val total = fold(tree)(List[A]()) { 
+    (a, b, c) => List(a) ++ b ++ c 
+  }
+  total.mean
+}
+
+val averageAge = avg(joffreyTree.map(_.age)) // averageAge: Int = 38
+						</code></pre>
+					</section>
+				</section>
+
 				<section>
 					<h1>The Ugly</h1>
 					<img src="./images/frey.jpg"/>
 				</section>
 
+				<section>
+					<h2>Scala is Hard, and sometimes Painful</h2>
+					<ul>
+						<li>Multiple paradigms, no clear direction</li>
+						<li>A lot of syntax choices</li>
+						<li>Division between <i>Java++</i> and <i>Haskell--</i> camps</li>
+						<li>Tooling support is behind</li>
+						<li>Not binary compatible between versions</li>
+					</ul>
+				</section>
+
+				<section>
+					<h1>The End</h1>
+				</section>
+
 				<!-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END OF SLIDES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
-
-				<section>
-					<h2>Heads Up</h2>
-					<p>
-						reveal.js is a framework for easily creating beautiful presentations using HTML. You'll need a browser with
-						support for CSS 3D transforms to see it in its full glory.
-					</p>
-
-					<aside class="notes">
-						Oh hey, these are some notes. They'll be hidden in your presentation, but you can see them if you open the speaker notes window (hit 's' on your keyboard).
-					</aside>
-				</section>
-
-				<!-- Example of nested vertical slides -->
-				<section>
-					<section>
-						<h2>Vertical Slides</h2>
-						<p>
-							Slides can be nested inside of other slides,
-							try pressing <a href="#" class="navigate-down">down</a>.
-						</p>
-						<a href="#" class="image navigate-down">
-							<img width="178" height="238" src="https://s3.amazonaws.com/hakim-static/reveal-js/arrow.png" alt="Down arrow">
-						</a>
-					</section>
-					<section>
-						<h2>Basement Level 1</h2>
-						<p>Press down or up to navigate.</p>
-					</section>
-					<section>
-						<h2>Basement Level 2</h2>
-						<p>Cornify</p>
-						<a class="test" href="http://cornify.com">
-							<img width="280" height="326" src="https://s3.amazonaws.com/hakim-static/reveal-js/cornify.gif" alt="Unicorn">
-						</a>
-					</section>
-					<section>
-						<h2>Basement Level 3</h2>
-						<p>That's it, time to go back up.</p>
-						<a href="#/2" class="image">
-							<img width="178" height="238" src="https://s3.amazonaws.com/hakim-static/reveal-js/arrow.png" alt="Up arrow" style="-webkit-transform: rotate(180deg);">
-						</a>
-					</section>
-				</section>
-
-				<section>
-					<h2>Slides</h2>
-					<p>
-						Not a coder? No problem. There's a fully-featured visual editor for authoring these, try it out at <a href="http://slid.es" target="_blank">http://slid.es</a>.
-					</p>
-				</section>
-
-				<section>
-					<h2>Point of View</h2>
-					<p>
-						Press <strong>ESC</strong> to enter the slide overview.
-					</p>
-					<p>
-						Hold down alt and click on any element to zoom in on it using <a href="http://lab.hakim.se/zoom-js">zoom.js</a>. Alt + click anywhere to zoom back out.
-					</p>
-				</section>
-
-				<section>
-					<h2>Works in Mobile Safari</h2>
-					<p>
-						Try it out! You can swipe through the slides and pinch your way to the overview.
-					</p>
-				</section>
-
-				<section>
-					<h2>Marvelous Unordered List</h2>
-					<ul>
-						<li>No order here</li>
-						<li>Or here</li>
-						<li>Or here</li>
-						<li>Or here</li>
-					</ul>
-				</section>
-
-				<section>
-					<h2>Fantastic Ordered List</h2>
-					<ol>
-						<li>One is smaller than...</li>
-						<li>Two is smaller than...</li>
-						<li>Three!</li>
-					</ol>
-				</section>
-
-				<section data-markdown>
-					<script type="text/template">
-						## Markdown support
-
-						For those of you who like that sort of thing. Instructions and a bit more info available [here](https://github.com/hakimel/reveal.js#markdown).
-
-						```
-						<section data-markdown>
-						  ## Markdown support
-
-						  For those of you who like that sort of thing.
-						  Instructions and a bit more info available [here](https://github.com/hakimel/reveal.js#markdown).
-						</section>
-						```
-					</script>
-				</section>
-
-				<section id="transitions">
-					<h2>Transition Styles</h2>
-					<p>
-						You can select from different transitions, like: <br>
-						<a href="?transition=cube#/transitions">Cube</a> -
-						<a href="?transition=page#/transitions">Page</a> -
-						<a href="?transition=concave#/transitions">Concave</a> -
-						<a href="?transition=zoom#/transitions">Zoom</a> -
-						<a href="?transition=linear#/transitions">Linear</a> -
-						<a href="?transition=fade#/transitions">Fade</a> -
-						<a href="?transition=none#/transitions">None</a> -
-						<a href="?#/transitions">Default</a>
-					</p>
-				</section>
-
-				<section id="themes">
-					<h2>Themes</h2>
-					<p>
-						Reveal.js comes with a few themes built in: <br>
-						<a href="?theme=sky#/themes">Sky</a> -
-						<a href="?theme=beige#/themes">Beige</a> -
-						<a href="?theme=simple#/themes">Simple</a> -
-						<a href="?theme=serif#/themes">Serif</a> -
-						<a href="?theme=night#/themes">Night</a> -
-						<a href="?#/themes">Default</a>
-					</p>
-					<p>
-						<small>
-							* Theme demos are loaded after the presentation which leads to flicker. In production you should load your theme in the <code>&lt;head&gt;</code> using a <code>&lt;link&gt;</code>.
-						</small>
-					</p>
-				</section>
-
-				<section>
-					<section data-state="alert">
-						<h2>Global State</h2>
-						<p>
-							Set <code>data-state="something"</code> on a slide and <code>"something"</code>
-							will be added as a class to the document element when the slide is open. This lets you
-							apply broader style changes, like switching the background.
-						</p>
-						<a href="#" class="image navigate-down">
-							<img width="178" height="238" src="https://s3.amazonaws.com/hakim-static/reveal-js/arrow.png" alt="Down arrow">
-						</a>
-					</section>
-					<section data-state="blackout">
-						<h2>"blackout"</h2>
-						<a href="#" class="image navigate-down">
-							<img width="178" height="238" src="https://s3.amazonaws.com/hakim-static/reveal-js/arrow.png" alt="Down arrow">
-						</a>
-					</section>
-					<section data-state="soothe">
-						<h2>"soothe"</h2>
-						<a href="#" class="image navigate-next">
-							<img width="178" height="238" src="https://s3.amazonaws.com/hakim-static/reveal-js/arrow.png" alt="Up arrow" style="-webkit-transform: rotate(-90deg);">
-						</a>
-					</section>
-				</section>
-
-				<section data-state="customevent">
-					<h2>Custom Events</h2>
-					<p>
-						Additionally custom events can be triggered on a per slide basis by binding to the <code>data-state</code> name.
-					</p>
-					<pre><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
-Reveal.addEventListener( 'customevent', function() {
-	console.log( '"customevent" has fired' );
-} );
-					</code></pre>
-				</section>
-
-				<section>
-					<h2>Clever Quotes</h2>
-					<p>
-						These guys come in two forms, inline: <q cite="http://searchservervirtualization.techtarget.com/definition/Our-Favorite-Technology-Quotations">
-						&ldquo;The nice thing about standards is that there are so many to choose from&rdquo;</q> and block:
-					</p>
-					<blockquote cite="http://searchservervirtualization.techtarget.com/definition/Our-Favorite-Technology-Quotations">
-						&ldquo;For years there has been a theory that millions of monkeys typing at random on millions of typewriters would
-						reproduce the entire works of Shakespeare. The Internet has proven this theory to be untrue.&rdquo;
-					</blockquote>
-				</section>
-
-				<section>
-					<h2>Pretty Code</h2>
-					<pre><code data-trim contenteditable>
-function linkify( selector ) {
-  if( supports3DTransforms ) {
-
-    var nodes = document.querySelectorAll( selector );
-
-    for( var i = 0, len = nodes.length; i &lt; len; i++ ) {
-      var node = nodes[i];
-
-      if( !node.className ) ) {
-        node.className += ' roll';
-      }
-    };
-  }
-}
-					</code></pre>
-					<p>Courtesy of <a href="http://softwaremaniacs.org/soft/highlight/en/description/">highlight.js</a>.</p>
-				</section>
-
-				<section>
-					<h2>Intergalactic Interconnections</h2>
-					<p>
-						You can link between slides internally,
-						<a href="#/2/3">like this</a>.
-					</p>
-				</section>
-
-				<section>
-					<section>
-						<h2>Fragmented Views</h2>
-						<p>Hit the next arrow...</p>
-						<p class="fragment">... to step through ...</p>
-						<ol>
-							<li class="fragment"><code>any type</code></li>
-							<li class="fragment"><em>of view</em></li>
-							<li class="fragment"><strong>fragments</strong></li>
-						</ol>
-
-						<aside class="notes">
-							This slide has fragments which are also stepped through in the notes window.
-						</aside>
-					</section>
-					<section>
-						<h2>Fragment Styles</h2>
-						<p>There's a few styles of fragments, like:</p>
-						<p class="fragment grow">grow</p>
-						<p class="fragment shrink">shrink</p>
-						<p class="fragment roll-in">roll-in</p>
-						<p class="fragment fade-out">fade-out</p>
-						<p class="fragment highlight-red">highlight-red</p>
-						<p class="fragment highlight-green">highlight-green</p>
-						<p class="fragment highlight-blue">highlight-blue</p>
-					</section>
-				</section>
-
-				<section>
-					<h2>Spectacular image!</h2>
-					<a class="image" href="http://lab.hakim.se/meny/" target="_blank">
-						<img width="320" height="299" src="http://s3.amazonaws.com/hakim-static/portfolio/images/meny.png" alt="Meny">
-					</a>
-				</section>
-
-				<section>
-					<h2>Export to PDF</h2>
-					<p>Presentations can be <a href="https://github.com/hakimel/reveal.js#pdf-export">exported to PDF</a>, below is an example that's been uploaded to SlideShare.</p>
-					<iframe id="slideshare" src="http://www.slideshare.net/slideshow/embed_code/13872948" width="455" height="356" style="margin:0;overflow:hidden;border:1px solid #CCC;border-width:1px 1px 0;margin-bottom:5px" allowfullscreen> </iframe>
-					<script>
-						document.getElementById('slideshare').attributeName = 'allowfullscreen';
-					</script>
-				</section>
-
-				<section>
-					<h2>Take a Moment</h2>
-					<p>
-						Press b or period on your keyboard to enter the 'paused' mode. This mode is helpful when you want to take distracting slides off the screen
-						during a presentation.
-					</p>
-				</section>
-
-				<section>
-					<h2>Stellar Links</h2>
-					<ul>
-						<li><a href="http://slid.es">Try the online editor</a></li>
-						<li><a href="https://github.com/hakimel/reveal.js">Source code on GitHub</a></li>
-						<li><a href="http://twitter.com/hakimel">Follow me on Twitter</a></li>
-					</ul>
-				</section>
-
-				<section>
-					<h1>THE END</h1>
-					<h3>BY Hakim El Hattab / hakim.se</h3>
-				</section>
 
 			</div>
 
