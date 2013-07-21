@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Fourier Transform | ~/dev/on]]></title>
+  <link href="http://devonbryant.github.com/blog/categories/fourier-transform/atom.xml" rel="self"/>
+  <link href="http://devonbryant.github.com/"/>
+  <updated>2013-07-21T12:18:21-06:00</updated>
+  <id>http://devonbryant.github.com/</id>
+  <author>
+    <name><![CDATA[Devon Bryant]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Fourier Transforms]]></title>
+    <link href="http://devonbryant.github.com/blog/2013/03/02/fourier-transforms/"/>
+    <updated>2013-03-02T10:50:00-07:00</updated>
+    <id>http://devonbryant.github.com/blog/2013/03/02/fourier-transforms</id>
+    <content type="html"><![CDATA[<p>The <a href="http://en.wikipedia.org/wiki/Fourier_transform">Fourier Transform</a> is one of the most important algorithms in signal processing.  While there is a wealth of information out there on the topic, most of it seems focused solely on the math or optimized implementations of the algorithm.  I have used this algorithm countless times in my research and thought I would share a programmers (and non-math major) perspective on the topic.</p>
+
+<!-- more -->
+
+
+<h2>The Basic Transform</h2>
+
+<p>The Fourier transform is a mapping function that takes a series of samples (or function) in the <em>time</em> domain and maps them into the <em>frequency</em> domain.  The transform is based on the Fourier Series, which is an expansion of a periodic function or signal into the sum of simpler sine and cosine functions.</p>
+
+<p><img src="/images/fourier/fourier_transform.png"></p>
+
+<p>Looking at the example above, the periodic time data can be described as the sum of 4 <em>sinusoidal</em> functions with frequencies at 110, 220, 330, and 440 hz.  So how does this mapping work?  Unfortunately most descriptions of the Fourier transform (and its inverse) jump right into the following math with little explanation:</p>
+
+<p><img class="center" src="/images/fourier/ft_eq1.png"></p>
+
+<p>It is often difficult to grasp how we're actually mapping from the time domain <em>f(x)</em> to the frequency domain <em>F(k)</em> (and vice versa) with these equations.  To understand how this works, we need to look at some important properties about the spectrum analysis first.  Let's start by taking two periodic signals <em>A</em> and <em>B</em>, where A is our input signal and B is a signal we are generating:</p>
+
+<p><img class="center" src="/images/fourier/siga_sigb.png"></p>
+
+<p>If we multiply these signals together and sum up the areas underneath the curves, we have:</p>
+
+<p><img class="center" src="/images/fourier/siga_b_mult.png"></p>
+
+<p>As you can see, about half the area is positive and the other half of the signal is negative and they will cancel each other out.  However, if we multiply two signals together that share a frequency (say A x A), we'll get:</p>
+
+<p><img class="center" src="/images/fourier/siga2.png"></p>
+
+<p>This tells us that our input signal has significant energy at the frequency of our test (generated) signal.  If we extend this idea, sweeping from frequencies -&infin; to &infin;, we will end up with spikes (or <em>Dirac</em> &#948; functions) where our signals share frequencies and zero energy elsewhere.  This is the basic idea behind Fourier transforms.</p>
+
+<h2>Working with Discrete Data</h2>
+
+<p>Since we are often working with small frames of sample data, we can't actually test all frequencies from -&infin; to &infin;.  The Discrete Fourier transform (DFT) is a modification of the Fourier transform that works with discrete sampled data.  Our equations from above become:</p>
+
+<p><img class="center" src="/images/fourier/ft_eq2.png"></p>
+
+<p><img class="right" src="/images/fourier/sample_freqs.png"></p>
+
+<p> The DFT will test evenly spaced frequencies from 0 hz to the <em>sampling frequency</em> (S<sub>r</sub>).  For example, if we have a signal sampled at 44.1 kHz and 1024 samples <em>N</em>, the transform will test only the frequencies shown.  The time complexity of the standard DFT is <em>O(n<sup>2</sup>)</em>.</p>
+
+<h2>Making it Faster</h2>
+
+<p>In 1965, J.W. Cooley and John Turkey came up with a divide and conquer algorithm for calculating a <a href="http://en.wikipedia.org/wiki/Fast_Fourier_transform">Fast Fourier Transform</a> (FFT) in <em>O(n log n)</em> time.  To this day, this is the most widely used algorithm for Fourier transforms.</p>
+
+<p>The Cooley-Turkey algorithm is often referred to as a <em>radix-2</em> decimation-in-time (DIT) algorithm.  The algorithm works by recursively splitting the data into smaller frames of size N/2 until you are calculating the FFT of a single value, which is the value itself.  For this reason, the length of the input frames must be a power of 2.  On each iteration, the data is split by even and odd indexes.  This interleaving split is where the term "radix-2" comes from.  The term "decimation-in-time" comes from the fact that we are splitting indexes that correspond to time.</p>
+
+<p>Another important property of the DFT is that the outputs for <em>0 &le; k &lt; N/2</em> are identical to the outputs for <em>N/2 &le; k &lt; N</em>.  Taking this into account, the above DFT algorithm can be split into the following:</p>
+
+<p><img class="center" src="/images/fourier/fft_eq.png"></p>
+
+<p>Note that for the odd terms, we were able to pull out the phase factor.  This term is often referred to as the <em>twiddle factor</em>.</p>
+
+<p>There are many implementations of the FFT in different languages.  The fastest and most widely used implementation is <a href="http://www.fftw.org/">FFTW</a>, based on highly optimized C code.  One interesting thing about FFTW is that the C code is actually generated by an OCaml program called 'genfft'.  In the next post, I'll explore some implementations of the FFT in Scala.</p>
+]]></content>
+  </entry>
+  
+</feed>

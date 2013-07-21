@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>
+    <url>
+        <loc>http://devonbryant.github.com/blog/2013/03/02/fourier-transforms/</loc>
+        <lastmod>2013-07-21T12:12:37-06:00</lastmod>
+    </url>
+    <url>
+        <loc>http://devonbryant.github.com/blog/2013/03/03/numerical-computing-with-scala/</loc>
+        <lastmod>2013-07-21T12:12:37-06:00</lastmod>
+    </url>
+    <url>
+        <loc>http://devonbryant.github.com/about/</loc>
+        <lastmod>2013-07-21T12:12:37-06:00</lastmod>
+    </url>
+    <url>
+        <loc>http://devonbryant.github.com/blog/archives/</loc>
+        <lastmod>2013-07-21T12:12:37-06:00</lastmod>
+    </url>
+    <url>
+        <loc>http://devonbryant.github.com/</loc>
+        <lastmod>2013-07-21T12:12:37-06:00</lastmod>
+    </url>
+    <url>
+        <loc>http://devonbryant.github.com/robots.txt</loc>
+        <lastmod>2013-07-21T12:12:37-06:00</lastmod>
+    </url>
+</urlset>

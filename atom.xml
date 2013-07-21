@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[~/dev/on]]></title>
+  <link href="http://devonbryant.github.com/atom.xml" rel="self"/>
+  <link href="http://devonbryant.github.com/"/>
+  <updated>2013-07-21T12:18:21-06:00</updated>
+  <id>http://devonbryant.github.com/</id>
+  <author>
+    <name><![CDATA[Devon Bryant]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Numerical Computing with Scala]]></title>
+    <link href="http://devonbryant.github.com/blog/2013/03/03/numerical-computing-with-scala/"/>
+    <updated>2013-03-03T09:35:00-07:00</updated>
+    <id>http://devonbryant.github.com/blog/2013/03/03/numerical-computing-with-scala</id>
+    <content type="html"><![CDATA[<p>In the <a href="http://devonbryant.github.com/blog/2013/03/02/fourier-transforms/">previous</a> post, we looked at the Fourier transform function.  In this post, we&#8217;ll explore some implementations of this function in Scala and capture some performance metrics.</p>
+
+<!-- more -->
+
+
+<p>Before we start, we need a data representation for complex numbers and a pure trait to test different FFT functions.  Note that the FFT trait specifies a <em>Numeric</em> type class so it can work with any sequence of numbers.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">case</span> <span class="k">class</span> <span class="nc">Complex</span><span class="o">(</span><span class="n">r</span><span class="k">:</span> <span class="kt">Double</span><span class="o">,</span> <span class="n">i</span><span class="k">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="o">+(</span><span class="n">x</span><span class="k">:</span> <span class="kt">Complex</span><span class="o">)</span> <span class="k">=</span> <span class="nc">Complex</span><span class="o">(</span><span class="n">r</span> <span class="o">+</span> <span class="n">x</span><span class="o">.</span><span class="n">r</span><span class="o">,</span> <span class="n">i</span> <span class="o">+</span> <span class="n">x</span><span class="o">.</span><span class="n">i</span><span class="o">)</span>
+</span><span class='line'>  <span class="k">def</span> <span class="o">-(</span><span class="n">x</span><span class="k">:</span> <span class="kt">Complex</span><span class="o">)</span> <span class="k">=</span> <span class="nc">Complex</span><span class="o">(</span><span class="n">r</span> <span class="o">-</span> <span class="n">x</span><span class="o">.</span><span class="n">r</span><span class="o">,</span> <span class="n">i</span> <span class="o">-</span> <span class="n">x</span><span class="o">.</span><span class="n">i</span><span class="o">)</span>
+</span><span class='line'>  <span class="k">def</span> <span class="o">*(</span><span class="n">x</span><span class="k">:</span> <span class="kt">Complex</span><span class="o">)</span> <span class="k">=</span> <span class="nc">Complex</span><span class="o">(</span><span class="n">r</span> <span class="o">*</span> <span class="n">x</span><span class="o">.</span><span class="n">r</span> <span class="o">-</span> <span class="n">i</span> <span class="o">*</span> <span class="n">x</span><span class="o">.</span><span class="n">i</span><span class="o">,</span> <span class="n">r</span> <span class="o">*</span> <span class="n">x</span><span class="o">.</span><span class="n">i</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="n">x</span><span class="o">.</span><span class="n">r</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">trait</span> <span class="nc">FFT</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">fft</span><span class="o">[</span><span class="kt">A</span> <span class="kt">:</span> <span class="kt">Numeric</span><span class="o">](</span><span class="n">data</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">A</span><span class="o">])</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">Complex</span><span class="o">]</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>As mentioned in the previous post, the <a href="http://en.wikipedia.org/wiki/Cooley%E2%80%93Tukey_FFT_algorithm">Cooley-Turkey</a> algorithm requires that the data length be a power of 2.  All of our equations in the previous post were in terms of the complex exponential function (<em>e<sup>ix</sup></em>).  Using <em>Euler&#8217;s</em> formula we can instead rely on sine and cosine functions in our implementations.</p>
+
+<p><img class="center" src="http://devonbryant.github.com/images/fourier/eulers.png"></p>
+
+<h2>Recursive Implementation</h2>
+
+<p>The recursive nature of the standard Cooley-Turkey algorithm lends itself nicely to a pure functional implementation.  Since we should always prefer pure functional code, we&#8217;ll start there.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">object</span> <span class="nc">CooleyTurkey</span> <span class="k">extends</span> <span class="nc">FFT</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">import</span> <span class="nn">scala.math._</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="n">fft</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">data</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">A</span><span class="o">])(</span><span class="k">implicit</span> <span class="n">num</span><span class="k">:</span> <span class="kt">Numeric</span><span class="o">[</span><span class="kt">A</span><span class="o">])</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">Complex</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">require</span><span class="o">((</span><span class="n">data</span><span class="o">.</span><span class="n">length</span> <span class="o">&amp;</span> <span class="n">data</span><span class="o">.</span><span class="n">length</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">ditfft2</span><span class="o">(</span><span class="n">data</span> <span class="n">map</span> <span class="o">{</span> <span class="n">a</span> <span class="k">=&gt;</span> <span class="nc">Complex</span><span class="o">(</span><span class="n">num</span><span class="o">.</span><span class="n">toDouble</span><span class="o">(</span><span class="n">a</span><span class="o">))</span> <span class="o">})</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">private</span><span class="o">[</span><span class="kt">this</span><span class="o">]</span> <span class="k">def</span> <span class="n">ditfft2</span><span class="o">(</span><span class="n">data</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">Complex</span><span class="o">])</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">Complex</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">data</span><span class="o">.</span><span class="n">length</span> <span class="k">match</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">case</span> <span class="mi">0</span> <span class="k">=&gt;</span> <span class="nc">Nil</span>
+</span><span class='line'>      <span class="k">case</span> <span class="mi">1</span> <span class="k">=&gt;</span> <span class="n">data</span>
+</span><span class='line'>      <span class="k">case</span> <span class="n">n</span> <span class="k">=&gt;</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">val</span> <span class="n">evens</span> <span class="k">=</span> <span class="n">ditfft2</span><span class="o">(</span><span class="n">filterByIndex</span><span class="o">(</span><span class="n">data</span><span class="o">)</span> <span class="o">{</span> <span class="k">_</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">})</span>
+</span><span class='line'>        <span class="k">val</span> <span class="n">odds</span> <span class="k">=</span> <span class="n">ditfft2</span><span class="o">(</span><span class="n">filterByIndex</span><span class="o">(</span><span class="n">data</span><span class="o">)</span> <span class="o">{</span> <span class="k">_</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span> <span class="o">})</span>
+</span><span class='line'>        <span class="k">val</span> <span class="n">phase</span> <span class="k">=</span> <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="k">&lt;-</span> <span class="mi">0</span> <span class="n">to</span> <span class="n">n</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="k">yield</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">val</span> <span class="n">p</span> <span class="k">=</span> <span class="o">-</span><span class="mf">2.0</span> <span class="o">*</span> <span class="nc">Pi</span> <span class="o">*</span> <span class="n">i</span> <span class="o">/</span> <span class="n">n</span>
+</span><span class='line'>          <span class="nc">Complex</span><span class="o">(</span><span class="n">cos</span><span class="o">(</span><span class="n">p</span><span class="o">),</span> <span class="n">sin</span><span class="o">(</span><span class="n">p</span><span class="o">))</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">val</span> <span class="n">ops</span> <span class="k">=</span> <span class="o">(</span><span class="n">odds</span><span class="o">,</span> <span class="n">phase</span><span class="o">).</span><span class="n">zipped</span> <span class="n">map</span> <span class="o">{</span> <span class="k">_</span> <span class="o">*</span> <span class="k">_</span> <span class="o">}</span>
+</span><span class='line'>        <span class="k">val</span> <span class="n">one</span> <span class="k">=</span> <span class="o">(</span><span class="n">evens</span><span class="o">,</span> <span class="n">ops</span><span class="o">).</span><span class="n">zipped</span> <span class="n">map</span> <span class="o">{</span> <span class="k">_</span> <span class="o">+</span> <span class="k">_</span> <span class="o">}</span>
+</span><span class='line'>        <span class="k">val</span> <span class="n">two</span> <span class="k">=</span> <span class="o">(</span><span class="n">evens</span><span class="o">,</span> <span class="n">ops</span><span class="o">).</span><span class="n">zipped</span> <span class="n">map</span> <span class="o">{</span> <span class="k">_</span> <span class="o">-</span> <span class="k">_</span> <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">one</span> <span class="o">++</span> <span class="n">two</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">private</span><span class="o">[</span><span class="kt">this</span><span class="o">]</span> <span class="k">def</span> <span class="n">filterByIndex</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">a</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">A</span><span class="o">])(</span><span class="n">p</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=&gt;</span> <span class="nc">Boolean</span><span class="o">)</span> <span class="k">=</span>
+</span><span class='line'>    <span class="n">a</span><span class="o">.</span><span class="n">zipWithIndex</span> <span class="n">filter</span> <span class="o">{</span> <span class="n">t</span> <span class="k">=&gt;</span> <span class="n">p</span><span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="n">_2</span><span class="o">)</span> <span class="o">}</span> <span class="n">map</span> <span class="o">{</span> <span class="n">t</span> <span class="k">=&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">_1</span> <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This actually follows the mathematical definition pretty nicely and is very concise and readable.  Note that we are recursively breaking the data into smaller DFTs by even and odd indexes.  We&#8217;re calculating the phase (twiddle) factors seperately and relying on the symmetric properties of the DFT to recombine the values for <em>0 &le; k &lt; N/2</em> and <em>N/2 &le; k &lt; N</em>.</p>
+
+<p>So how well does this algorithm perform?  First try with 1024 random Double values on my machine takes ~ 100 ms.  OK, let&#8217;s see how this does once the machine warms up.  If we try 10 random sequences in a row (size 1024), we get:</p>
+
+<p><img class="center" src="http://devonbryant.github.com/images/fourier/ct_recur_time1.png"></p>
+
+<p>We can see that it&#8217;s starting to settle.  After running 1000 iterations, we get an average of ~ 3 ms per fft call.</p>
+
+<h2>Imperative Implementation</h2>
+
+<p>It&#8217;s no secret that optimizing Scala code can sometimes be ugly (see Erik Osheim&#8217;s <a href="http://nescala.org/#t-14447186">Premature Optimization</a>).  So let&#8217;s see if we move towards an imperative version of the FFT.</p>
+
+<p>The following is basically a translation of the algorithm from Apache <a href="http://commons.apache.org/proper/commons-math/">Commons-Math</a> into Scala.  This algorithm is still based on the Cooley-Turkey algorithm, but the implementation is much more verbose and harder to follow than the recursive version.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">object</span> <span class="nc">ApacheFFT</span> <span class="k">extends</span> <span class="nc">FFT</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">import</span> <span class="nn">scala.math._</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="n">fft</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">data</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">A</span><span class="o">])(</span><span class="k">implicit</span> <span class="n">num</span><span class="k">:</span> <span class="kt">Numeric</span><span class="o">[</span><span class="kt">A</span><span class="o">])</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">Complex</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">require</span><span class="o">((</span><span class="n">data</span><span class="o">.</span><span class="n">length</span> <span class="o">&amp;</span> <span class="n">data</span><span class="o">.</span><span class="n">length</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">val</span> <span class="n">real</span> <span class="k">=</span> <span class="o">(</span><span class="n">data</span> <span class="n">map</span> <span class="o">{</span> <span class="n">num</span><span class="o">.</span><span class="n">toDouble</span><span class="o">(</span><span class="k">_</span><span class="o">)</span> <span class="o">}).</span><span class="n">toArray</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">imag</span> <span class="k">=</span> <span class="nc">Array</span><span class="o">.</span><span class="n">ofDim</span><span class="o">[</span><span class="kt">Double</span><span class="o">](</span><span class="n">data</span><span class="o">.</span><span class="n">length</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">inPlaceFFT</span><span class="o">(</span><span class="n">real</span><span class="o">,</span> <span class="n">imag</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">(</span><span class="n">real</span><span class="o">,</span> <span class="n">imag</span><span class="o">).</span><span class="n">zipped</span> <span class="n">map</span> <span class="o">{</span> <span class="nc">Complex</span><span class="o">(</span><span class="k">_</span><span class="o">,</span> <span class="k">_</span><span class="o">)</span> <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">private</span><span class="o">[</span><span class="kt">this</span><span class="o">]</span> <span class="k">lazy</span> <span class="k">val</span> <span class="nc">W_SUB_N_R</span> <span class="k">=</span> <span class="o">(</span><span class="mi">0</span> <span class="n">to</span> <span class="mi">64</span><span class="o">)</span> <span class="n">map</span> <span class="o">{</span> <span class="n">i</span> <span class="k">=&gt;</span> <span class="n">cos</span><span class="o">(</span><span class="mi">2</span> <span class="o">*</span> <span class="nc">Pi</span> <span class="o">/</span> <span class="n">pow</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="n">i</span><span class="o">))</span> <span class="o">}</span>
+</span><span class='line'>  <span class="k">private</span><span class="o">[</span><span class="kt">this</span><span class="o">]</span> <span class="k">lazy</span> <span class="k">val</span> <span class="nc">W_SUB_N_I</span> <span class="k">=</span> <span class="o">(</span><span class="mi">0</span> <span class="n">to</span> <span class="mi">64</span><span class="o">)</span> <span class="n">map</span> <span class="o">{</span> <span class="n">i</span> <span class="k">=&gt;</span> <span class="o">-</span><span class="n">sin</span><span class="o">(</span><span class="mi">2</span> <span class="o">*</span> <span class="nc">Pi</span> <span class="o">/</span> <span class="n">pow</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="n">i</span><span class="o">))</span> <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">private</span><span class="o">[</span><span class="kt">this</span><span class="o">]</span> <span class="k">def</span> <span class="n">bitReverseShuff</span><span class="o">(</span><span class="n">real</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[</span><span class="kt">Double</span><span class="o">],</span> <span class="n">imag</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[</span><span class="kt">Double</span><span class="o">])</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">n</span> <span class="k">=</span> <span class="n">real</span><span class="o">.</span><span class="n">length</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">halfOfN</span> <span class="k">=</span> <span class="n">n</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">def</span> <span class="n">swap</span><span class="o">(</span><span class="n">dv</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[</span><span class="kt">Double</span><span class="o">],</span> <span class="n">a</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">b</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">tmp</span> <span class="k">=</span> <span class="n">dv</span><span class="o">(</span><span class="n">a</span><span class="o">)</span>
+</span><span class='line'>      <span class="n">dv</span><span class="o">(</span><span class="n">a</span><span class="o">)</span> <span class="k">=</span> <span class="n">dv</span><span class="o">(</span><span class="n">b</span><span class="o">)</span>
+</span><span class='line'>      <span class="n">dv</span><span class="o">(</span><span class="n">b</span><span class="o">)</span> <span class="k">=</span> <span class="n">tmp</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">var</span> <span class="n">i</span><span class="o">,</span> <span class="n">j</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>    <span class="k">while</span> <span class="o">(</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">j</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">swap</span><span class="o">(</span><span class="n">real</span><span class="o">,</span> <span class="n">i</span><span class="o">,</span> <span class="n">j</span><span class="o">)</span>
+</span><span class='line'>        <span class="n">swap</span><span class="o">(</span><span class="n">imag</span><span class="o">,</span> <span class="n">i</span><span class="o">,</span> <span class="n">j</span><span class="o">)</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">var</span> <span class="n">k</span> <span class="k">=</span> <span class="n">halfOfN</span>
+</span><span class='line'>      <span class="k">while</span> <span class="o">(</span><span class="n">k</span> <span class="o">&lt;=</span> <span class="n">j</span> <span class="o">&amp;&amp;</span> <span class="n">k</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">j</span> <span class="o">-=</span> <span class="n">k</span>
+</span><span class='line'>        <span class="n">k</span> <span class="o">&gt;&gt;=</span> <span class="mi">1</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="n">j</span> <span class="o">+=</span> <span class="n">k</span>
+</span><span class='line'>      <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">private</span><span class="o">[</span><span class="kt">this</span><span class="o">]</span> <span class="k">def</span> <span class="n">inPlaceFFT</span><span class="o">(</span><span class="n">real</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[</span><span class="kt">Double</span><span class="o">],</span> <span class="n">imag</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[</span><span class="kt">Double</span><span class="o">])</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">n</span> <span class="k">=</span> <span class="n">real</span><span class="o">.</span><span class="n">length</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">bitReverseShuff</span><span class="o">(</span><span class="n">real</span><span class="o">,</span> <span class="n">imag</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">var</span> <span class="n">i0</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>    <span class="k">while</span> <span class="o">(</span><span class="n">i0</span> <span class="o">&lt;</span> <span class="n">n</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">i1</span> <span class="k">=</span> <span class="n">i0</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">i2</span> <span class="k">=</span> <span class="n">i0</span> <span class="o">+</span> <span class="mi">2</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">i3</span> <span class="k">=</span> <span class="n">i0</span> <span class="o">+</span> <span class="mi">3</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">val</span> <span class="n">srcR0</span> <span class="k">=</span> <span class="n">real</span><span class="o">(</span><span class="n">i0</span><span class="o">)</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">srcI0</span> <span class="k">=</span> <span class="n">imag</span><span class="o">(</span><span class="n">i0</span><span class="o">)</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">srcR1</span> <span class="k">=</span> <span class="n">real</span><span class="o">(</span><span class="n">i2</span><span class="o">)</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">srcI1</span> <span class="k">=</span> <span class="n">imag</span><span class="o">(</span><span class="n">i2</span><span class="o">)</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">srcR2</span> <span class="k">=</span> <span class="n">real</span><span class="o">(</span><span class="n">i1</span><span class="o">)</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">srcI2</span> <span class="k">=</span> <span class="n">imag</span><span class="o">(</span><span class="n">i1</span><span class="o">)</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">srcR3</span> <span class="k">=</span> <span class="n">real</span><span class="o">(</span><span class="n">i3</span><span class="o">)</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">srcI3</span> <span class="k">=</span> <span class="n">imag</span><span class="o">(</span><span class="n">i3</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">real</span><span class="o">(</span><span class="n">i0</span><span class="o">)</span> <span class="k">=</span> <span class="n">srcR0</span> <span class="o">+</span> <span class="n">srcR1</span> <span class="o">+</span> <span class="n">srcR2</span> <span class="o">+</span> <span class="n">srcR3</span>
+</span><span class='line'>      <span class="n">imag</span><span class="o">(</span><span class="n">i0</span><span class="o">)</span> <span class="k">=</span> <span class="n">srcI0</span> <span class="o">+</span> <span class="n">srcI1</span> <span class="o">+</span> <span class="n">srcI2</span> <span class="o">+</span> <span class="n">srcI3</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">real</span><span class="o">(</span><span class="n">i1</span><span class="o">)</span> <span class="k">=</span> <span class="n">srcR0</span> <span class="o">-</span> <span class="n">srcR2</span> <span class="o">+</span> <span class="o">(</span><span class="n">srcI1</span> <span class="o">-</span> <span class="n">srcI3</span><span class="o">)</span>
+</span><span class='line'>      <span class="n">imag</span><span class="o">(</span><span class="n">i1</span><span class="o">)</span> <span class="k">=</span> <span class="n">srcI0</span> <span class="o">-</span> <span class="n">srcI2</span> <span class="o">+</span> <span class="o">(</span><span class="n">srcR3</span> <span class="o">-</span> <span class="n">srcR1</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">real</span><span class="o">(</span><span class="n">i2</span><span class="o">)</span> <span class="k">=</span> <span class="n">srcR0</span> <span class="o">-</span> <span class="n">srcR1</span> <span class="o">+</span> <span class="n">srcR2</span> <span class="o">-</span> <span class="n">srcR3</span>
+</span><span class='line'>      <span class="n">imag</span><span class="o">(</span><span class="n">i2</span><span class="o">)</span> <span class="k">=</span> <span class="n">srcI0</span> <span class="o">-</span> <span class="n">srcI1</span> <span class="o">+</span> <span class="n">srcI2</span> <span class="o">-</span> <span class="n">srcI3</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">real</span><span class="o">(</span><span class="n">i3</span><span class="o">)</span> <span class="k">=</span> <span class="n">srcR0</span> <span class="o">-</span> <span class="n">srcR2</span> <span class="o">+</span> <span class="o">(</span><span class="n">srcI3</span> <span class="o">-</span> <span class="n">srcI1</span><span class="o">)</span>
+</span><span class='line'>      <span class="n">imag</span><span class="o">(</span><span class="n">i3</span><span class="o">)</span> <span class="k">=</span> <span class="n">srcI0</span> <span class="o">-</span> <span class="n">srcI2</span> <span class="o">+</span> <span class="o">(</span><span class="n">srcR1</span> <span class="o">-</span> <span class="n">srcR3</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">i0</span> <span class="o">+=</span> <span class="mi">4</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">var</span> <span class="n">lastN0</span> <span class="k">=</span> <span class="mi">4</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">lastLogN0</span> <span class="k">=</span> <span class="mi">2</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">n0</span><span class="o">,</span> <span class="n">logN0</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">wSubN0R</span><span class="o">,</span> <span class="n">wSubN0I</span><span class="o">,</span> <span class="n">wSubN0ToRR</span><span class="o">,</span> <span class="n">wSubN0ToRI</span><span class="o">,</span> <span class="n">grR</span><span class="o">,</span> <span class="n">grI</span><span class="o">,</span> <span class="n">hrR</span><span class="o">,</span> <span class="n">hrI</span><span class="o">,</span> <span class="n">nextWsubN0ToRR</span><span class="o">,</span> <span class="n">nextWsubN0ToRI</span> <span class="k">=</span> <span class="mf">0.0</span>
+</span><span class='line'>    <span class="k">while</span> <span class="o">(</span><span class="n">lastN0</span> <span class="o">&lt;</span> <span class="n">n</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">n0</span> <span class="k">=</span> <span class="n">lastN0</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span>
+</span><span class='line'>      <span class="n">logN0</span> <span class="k">=</span> <span class="n">lastLogN0</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span class='line'>      <span class="n">wSubN0R</span> <span class="k">=</span> <span class="nc">W_SUB_N_R</span><span class="o">(</span><span class="n">logN0</span><span class="o">)</span>
+</span><span class='line'>      <span class="n">wSubN0I</span> <span class="k">=</span> <span class="nc">W_SUB_N_I</span><span class="o">(</span><span class="n">logN0</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">var</span> <span class="n">destEvenStartIndex</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>      <span class="k">while</span> <span class="o">(</span><span class="n">destEvenStartIndex</span> <span class="o">&lt;</span> <span class="n">n</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">val</span> <span class="n">destOddStartIndex</span> <span class="k">=</span> <span class="n">destEvenStartIndex</span> <span class="o">+</span> <span class="n">lastN0</span>
+</span><span class='line'>        <span class="n">wSubN0ToRR</span> <span class="k">=</span> <span class="mf">1.0</span>
+</span><span class='line'>        <span class="n">wSubN0ToRI</span> <span class="k">=</span> <span class="mf">0.0</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">var</span> <span class="n">r</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>        <span class="k">while</span> <span class="o">(</span><span class="n">r</span> <span class="o">&lt;</span> <span class="n">lastN0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">grR</span> <span class="k">=</span> <span class="n">real</span><span class="o">(</span><span class="n">destEvenStartIndex</span> <span class="o">+</span> <span class="n">r</span><span class="o">)</span>
+</span><span class='line'>          <span class="n">grI</span> <span class="k">=</span> <span class="n">imag</span><span class="o">(</span><span class="n">destEvenStartIndex</span> <span class="o">+</span> <span class="n">r</span><span class="o">)</span>
+</span><span class='line'>          <span class="n">hrR</span> <span class="k">=</span> <span class="n">real</span><span class="o">(</span><span class="n">destOddStartIndex</span> <span class="o">+</span> <span class="n">r</span><span class="o">)</span>
+</span><span class='line'>          <span class="n">hrI</span> <span class="k">=</span> <span class="n">imag</span><span class="o">(</span><span class="n">destOddStartIndex</span> <span class="o">+</span> <span class="n">r</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="n">real</span><span class="o">(</span><span class="n">destEvenStartIndex</span> <span class="o">+</span> <span class="n">r</span><span class="o">)</span> <span class="k">=</span> <span class="n">grR</span> <span class="o">+</span> <span class="n">wSubN0ToRR</span> <span class="o">*</span> <span class="n">hrR</span> <span class="o">-</span> <span class="n">wSubN0ToRI</span> <span class="o">*</span> <span class="n">hrI</span>
+</span><span class='line'>          <span class="n">imag</span><span class="o">(</span><span class="n">destEvenStartIndex</span> <span class="o">+</span> <span class="n">r</span><span class="o">)</span> <span class="k">=</span> <span class="n">grI</span> <span class="o">+</span> <span class="n">wSubN0ToRR</span> <span class="o">*</span> <span class="n">hrI</span> <span class="o">+</span> <span class="n">wSubN0ToRI</span> <span class="o">*</span> <span class="n">hrR</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="n">real</span><span class="o">(</span><span class="n">destOddStartIndex</span> <span class="o">+</span> <span class="n">r</span><span class="o">)</span> <span class="k">=</span> <span class="n">grR</span> <span class="o">-</span> <span class="o">(</span><span class="n">wSubN0ToRR</span> <span class="o">*</span> <span class="n">hrR</span> <span class="o">-</span> <span class="n">wSubN0ToRI</span> <span class="o">*</span> <span class="n">hrI</span><span class="o">)</span>
+</span><span class='line'>          <span class="n">imag</span><span class="o">(</span><span class="n">destOddStartIndex</span> <span class="o">+</span> <span class="n">r</span><span class="o">)</span> <span class="k">=</span> <span class="n">grI</span> <span class="o">-</span> <span class="o">(</span><span class="n">wSubN0ToRR</span> <span class="o">*</span> <span class="n">hrI</span> <span class="o">+</span> <span class="n">wSubN0ToRI</span> <span class="o">*</span> <span class="n">hrR</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="n">nextWsubN0ToRR</span> <span class="k">=</span> <span class="n">wSubN0ToRR</span> <span class="o">*</span> <span class="n">wSubN0R</span> <span class="o">-</span> <span class="n">wSubN0ToRI</span> <span class="o">*</span> <span class="n">wSubN0I</span>
+</span><span class='line'>          <span class="n">nextWsubN0ToRI</span> <span class="k">=</span> <span class="n">wSubN0ToRR</span> <span class="o">*</span> <span class="n">wSubN0I</span> <span class="o">+</span> <span class="n">wSubN0ToRI</span> <span class="o">*</span> <span class="n">wSubN0R</span>
+</span><span class='line'>          <span class="n">wSubN0ToRR</span> <span class="k">=</span> <span class="n">nextWsubN0ToRR</span>
+</span><span class='line'>          <span class="n">wSubN0ToRI</span> <span class="k">=</span> <span class="n">nextWsubN0ToRI</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="n">r</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">destEvenStartIndex</span> <span class="o">+=</span> <span class="n">n0</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">lastN0</span> <span class="k">=</span> <span class="n">n0</span>
+</span><span class='line'>      <span class="n">lastLogN0</span> <span class="k">=</span> <span class="n">logN0</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Yikes, we went from 30 lines of code to 120.  Let&#8217;s take a look at a few points in this algorithm though.  Since we are no longer recursively selecting even/odd indexes, we perform a bit-reverse shuffle of the data up front.  This allows us to traverse the data in essentially the same order.  Also, note that the <em>W<sub>N</sub><sup>k</sup></em> real and imaginary factors are pre-computed.  This, in combination with the fact that we are operating on arrays and avoiding boxing and unboxing will certainly make this algorithm faster.  Let&#8217;s see how much.</p>
+
+<p>Using the same test as before, our first try with 1024 random samples takes ~ 20 ms.  Next up, let&#8217;s test with the warmup using 10 iterations:</p>
+
+<p><img class="center" src="http://devonbryant.github.com/images/fourier/ct_imper_time1.png"></p>
+
+<p>After 1000 iterations, it takes an average of ~ 0.19 ms per fft call.</p>
+
+<h2>Conclusions</h2>
+
+<p>The following table shows a side-by-side comparison of both algorithms.  The times in these tables were averaged from 1000 iterations on increasing frame sizes.</p>
+
+<table>
+<thead>
+<tr>
+<th> Frame Size </th>
+<th align="right"> Recursive Time (ms) </th>
+<th align="right"> Imperative Time (ms) </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> 512        </td>
+<td align="right"> 1.56                </td>
+<td align="right"> 0.14                 </td>
+</tr>
+<tr>
+<td> 1024       </td>
+<td align="right"> 2.98                </td>
+<td align="right"> 0.19                 </td>
+</tr>
+<tr>
+<td> 2048       </td>
+<td align="right"> 6.04                </td>
+<td align="right"> 0.27                 </td>
+</tr>
+<tr>
+<td> 4096       </td>
+<td align="right"> 13.18               </td>
+<td align="right"> 0.47                 </td>
+</tr>
+</tbody>
+</table>
+
+
+<p> &nbsp;</p>
+
+<p> The imperative algorithm is clearly faster, but much more verbose and harder to understand.</p>
+
+<p> Scala gets knocked sometimes for allowing both OO/imperative and functional styles of coding.  In my opinion this is actually a huge benefit for the language.  You can favor the functional style and resort to imperative code in cases where performance is critical.  These cases can be isolated and the details can be hidden.  Looking at our imperative algorithm above, the FFT is still referentially transparent.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Fourier Transforms]]></title>
+    <link href="http://devonbryant.github.com/blog/2013/03/02/fourier-transforms/"/>
+    <updated>2013-03-02T10:50:00-07:00</updated>
+    <id>http://devonbryant.github.com/blog/2013/03/02/fourier-transforms</id>
+    <content type="html"><![CDATA[<p>The <a href="http://en.wikipedia.org/wiki/Fourier_transform">Fourier Transform</a> is one of the most important algorithms in signal processing.  While there is a wealth of information out there on the topic, most of it seems focused solely on the math or optimized implementations of the algorithm.  I have used this algorithm countless times in my research and thought I would share a programmers (and non-math major) perspective on the topic.</p>
+
+<!-- more -->
+
+
+<h2>The Basic Transform</h2>
+
+<p>The Fourier transform is a mapping function that takes a series of samples (or function) in the <em>time</em> domain and maps them into the <em>frequency</em> domain.  The transform is based on the Fourier Series, which is an expansion of a periodic function or signal into the sum of simpler sine and cosine functions.</p>
+
+<p><img src="http://devonbryant.github.com/images/fourier/fourier_transform.png"></p>
+
+<p>Looking at the example above, the periodic time data can be described as the sum of 4 <em>sinusoidal</em> functions with frequencies at 110, 220, 330, and 440 hz.  So how does this mapping work?  Unfortunately most descriptions of the Fourier transform (and its inverse) jump right into the following math with little explanation:</p>
+
+<p><img class="center" src="http://devonbryant.github.com/images/fourier/ft_eq1.png"></p>
+
+<p>It is often difficult to grasp how we&#8217;re actually mapping from the time domain <em>f(x)</em> to the frequency domain <em>F(k)</em> (and vice versa) with these equations.  To understand how this works, we need to look at some important properties about the spectrum analysis first.  Let&#8217;s start by taking two periodic signals <em>A</em> and <em>B</em>, where A is our input signal and B is a signal we are generating:</p>
+
+<p><img class="center" src="http://devonbryant.github.com/images/fourier/siga_sigb.png"></p>
+
+<p>If we multiply these signals together and sum up the areas underneath the curves, we have:</p>
+
+<p><img class="center" src="http://devonbryant.github.com/images/fourier/siga_b_mult.png"></p>
+
+<p>As you can see, about half the area is positive and the other half of the signal is negative and they will cancel each other out.  However, if we multiply two signals together that share a frequency (say A x A), we&#8217;ll get:</p>
+
+<p><img class="center" src="http://devonbryant.github.com/images/fourier/siga2.png"></p>
+
+<p>This tells us that our input signal has significant energy at the frequency of our test (generated) signal.  If we extend this idea, sweeping from frequencies -&infin; to &infin;, we will end up with spikes (or <em>Dirac</em> &#948; functions) where our signals share frequencies and zero energy elsewhere.  This is the basic idea behind Fourier transforms.</p>
+
+<h2>Working with Discrete Data</h2>
+
+<p>Since we are often working with small frames of sample data, we can&#8217;t actually test all frequencies from -&infin; to &infin;.  The Discrete Fourier transform (DFT) is a modification of the Fourier transform that works with discrete sampled data.  Our equations from above become:</p>
+
+<p><img class="center" src="http://devonbryant.github.com/images/fourier/ft_eq2.png"></p>
+
+<p><img class="right" src="http://devonbryant.github.com/images/fourier/sample_freqs.png"></p>
+
+<p> The DFT will test evenly spaced frequencies from 0 hz to the <em>sampling frequency</em> (S<sub>r</sub>).  For example, if we have a signal sampled at 44.1 kHz and 1024 samples <em>N</em>, the transform will test only the frequencies shown.  The time complexity of the standard DFT is <em>O(n<sup>2</sup>)</em>.</p>
+
+<h2>Making it Faster</h2>
+
+<p>In 1965, J.W. Cooley and John Turkey came up with a divide and conquer algorithm for calculating a <a href="http://en.wikipedia.org/wiki/Fast_Fourier_transform">Fast Fourier Transform</a> (FFT) in <em>O(n log n)</em> time.  To this day, this is the most widely used algorithm for Fourier transforms.</p>
+
+<p>The Cooley-Turkey algorithm is often referred to as a <em>radix-2</em> decimation-in-time (DIT) algorithm.  The algorithm works by recursively splitting the data into smaller frames of size N/2 until you are calculating the FFT of a single value, which is the value itself.  For this reason, the length of the input frames must be a power of 2.  On each iteration, the data is split by even and odd indexes.  This interleaving split is where the term &#8220;radix-2&#8221; comes from.  The term &#8220;decimation-in-time&#8221; comes from the fact that we are splitting indexes that correspond to time.</p>
+
+<p>Another important property of the DFT is that the outputs for <em>0 &le; k &lt; N/2</em> are identical to the outputs for <em>N/2 &le; k &lt; N</em>.  Taking this into account, the above DFT algorithm can be split into the following:</p>
+
+<p><img class="center" src="http://devonbryant.github.com/images/fourier/fft_eq.png"></p>
+
+<p>Note that for the odd terms, we were able to pull out the phase factor.  This term is often referred to as the <em>twiddle factor</em>.</p>
+
+<p>There are many implementations of the FFT in different languages.  The fastest and most widely used implementation is <a href="http://www.fftw.org/">FFTW</a>, based on highly optimized C code.  One interesting thing about FFTW is that the C code is actually generated by an OCaml program called &#8216;genfft&#8217;.  In the next post, I&#8217;ll explore some implementations of the FFT in Scala.</p>
+]]></content>
+  </entry>
+  
+</feed>
