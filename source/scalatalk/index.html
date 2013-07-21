@@ -598,7 +598,7 @@ Vector(BigDecimal(1), BigDecimal(2)).mean // res1: BigDecimal = 1.5
 					<section>
 						<h3>One Last Example (Bringing it all together)</h3>
 						<pre class="scala"><code data-trim contenteditable>
-def avg[A](tree: FamilyTree[A])(implicit frac: Fractional[A]) = {
+def avg[A : Fractional](tree: FamilyTree[A]) = {
   val total = fold(tree)(List[A]()) { 
     (a, b, c) => List(a) ++ b ++ c 
   }
