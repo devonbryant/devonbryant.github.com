@@ -14,7 +14,7 @@ For those interested in the actual song key identification research, the source 
 
 ## Why MIDI?
 
-Extracting annotations from a MIDI file is often much simpler than other formats because the timing information, instruments, and notes are all encoded in the file itself.  Unfortunately the default MIDI soundbanks on most computers are pretty terrible and don't sound like real instruments or musicians, so you don't want to use them for evaluating or training MIR systems.  However, there are many realistic soundfonts available online that can make a MIDI recording sound close to real instruments.  To avoid overfitting our system, we wanted to use real audio training sets with diverse instrument sounds (rock, jazz, classical, metal, etc.) so that the key identification was mostly genre-agnostic.
+Extracting annotations from a MIDI file is often much simpler than other formats because the timing information, instruments, and notes are all encoded in the file itself.  Unfortunately the default MIDI soundbanks on most computers are pretty terrible and don't sound like real instruments or musicians, so you don't want to use them for evaluating or training MIR systems.  However, there are many realistic soundfonts available online that can make a MIDI recording sound close to real instruments.  To avoid overfitting our system on specific sounds, we wanted to use real audio training sets with diverse instrument sounds (rock, jazz, classical, metal, etc.).
 
 ## Conversion Script
 
