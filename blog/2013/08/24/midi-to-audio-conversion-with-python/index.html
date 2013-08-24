@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Fourier Transforms - ~/dev/on</title>
+  <title>MIDI To Audio Conversion With Python - ~/dev/on</title>
   <meta name="author" content="Devon Bryant">
 
   
-  <meta name="description" content="The Fourier Transform is one of the most important algorithms in signal processing. While there is a wealth of information out there on the topic, &hellip;">
+  <meta name="description" content="Last year I was working on a Music Information Retrieval (MIR) problem, trying to identify a song&#8217;s key from audio recordings. With many &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://devonbryant.github.com/blog/2013/03/02/fourier-transforms/">
+  <link rel="canonical" href="http://devonbryant.github.com/blog/2013/08/24/midi-to-audio-conversion-with-python/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/stylesheets/data-table.css" media="screen, projection" rel="stylesheet" type="text/css" />
@@ -81,7 +81,7 @@
   
   <header>
     
-      <h1 class="entry-title">Fourier Transforms</h1>
+      <h1 class="entry-title">MIDI to Audio Conversion With Python</h1>
     
     
       <p class="meta">
@@ -97,65 +97,31 @@
   
 
 
-<time datetime="2013-03-02T10:50:00-07:00" pubdate data-updated="true">Mar 2<span>nd</span>, 2013</time>
+<time datetime="2013-08-24T14:54:00-06:00" pubdate data-updated="true">Aug 24<span>th</span>, 2013</time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>The <a href="http://en.wikipedia.org/wiki/Fourier_transform">Fourier Transform</a> is one of the most important algorithms in signal processing.  While there is a wealth of information out there on the topic, most of it seems focused solely on the math or optimized implementations of the algorithm.  I have used this algorithm countless times in my research and thought I would share a programmers (and non-math major) perspective on the topic.</p>
+<div class="entry-content"><p>Last year I was working on a Music Information Retrieval (MIR) problem, trying to identify a song&#8217;s key from audio recordings.  With many machine learning problems, one of the most difficult tasks is finding good data sets to train and test with.  While there are some good <a href="http://isophonics.net/datasets">annotated music datasets</a> out there, sometimes you need to generate your own test data.  This post includes a simple Python script we used to generate test data based on MIDI files.</p>
 
 <!-- more -->
 
 
-<h2>The Basic Transform</h2>
+<p>For those interested in the actual song key identification research, the source code for that is available <a href="http://github.com/devonbryant/uccs-mir-key">here</a>.  The algorithm we used was based on Hidden Markov model classifiers and Beat-Synchronous Chromagram audio features.</p>
 
-<p>The Fourier transform is a mapping function that takes a series of samples (or function) in the <em>time</em> domain and maps them into the <em>frequency</em> domain.  The transform is based on the Fourier Series, which is an expansion of a periodic function or signal into the sum of simpler sine and cosine functions.</p>
+<h2>Why MIDI?</h2>
 
-<p><img src="/images/fourier/fourier_transform.png"></p>
+<p>Extracting annotations from a MIDI file is often much simpler than other formats because the timing information, instruments, and notes are all encoded in the file itself.  Unfortunately the default MIDI soundbanks on most computers are pretty terrible and don&#8217;t sound like real instruments or musicians, so you don&#8217;t want to use them for evaluating or training MIR systems.  However, there are many realistic soundfonts available online that can make a MIDI recording sound close to real instruments.  To avoid overfitting our system, we wanted to use real audio training sets with diverse instrument sounds (rock, jazz, classical, metal, etc.) so that the key identification was mostly genre-agnostic.</p>
 
-<p>Looking at the example above, the periodic time data can be described as the sum of 4 <em>sinusoidal</em> functions with frequencies at 110, 220, 330, and 440 hz.  So how does this mapping work?  Unfortunately most descriptions of the Fourier transform (and its inverse) jump right into the following math with little explanation:</p>
+<h2>Conversion Script</h2>
 
-<p><img class="center" src="/images/fourier/ft_eq1.png"></p>
+<p>The following Python script takes a directory of MIDI files and a directory of SF2 soundfont files and generates corresponding audio files (wav, aiff, mp3, etc.).  The selection of which soundfont is used for each MIDI file is random.  To use this script, you need to have <a href="http://sourceforge.net/apps/trac/fluidsynth/">FluidSynth</a> installed.</p>
 
-<p>It is often difficult to grasp how we&#8217;re actually mapping from the time domain <em>f(x)</em> to the frequency domain <em>F(k)</em> (and vice versa) with these equations.  To understand how this works, we need to look at some important properties about the spectrum analysis first.  Let&#8217;s start by taking two periodic signals <em>A</em> and <em>B</em>, where A is our input signal and B is a signal we are generating:</p>
+<div><script src='https://gist.github.com/1810984.js'></script>
+<noscript><pre><code></code></pre></noscript></div>
 
-<p><img class="center" src="/images/fourier/siga_sigb.png"></p>
-
-<p>If we multiply these signals together and sum up the areas underneath the curves, we have:</p>
-
-<p><img class="center" src="/images/fourier/siga_b_mult.png"></p>
-
-<p>As you can see, about half the area is positive and the other half of the signal is negative and they will cancel each other out.  However, if we multiply two signals together that share a frequency (say A x A), we&#8217;ll get:</p>
-
-<p><img class="center" src="/images/fourier/siga2.png"></p>
-
-<p>This tells us that our input signal has significant energy at the frequency of our test (generated) signal.  If we extend this idea, sweeping from frequencies -&infin; to &infin;, we will end up with spikes (or <em>Dirac</em> &#948; functions) where our signals share frequencies and zero energy elsewhere.  This is the basic idea behind Fourier transforms.</p>
-
-<h2>Working with Discrete Data</h2>
-
-<p>Since we are often working with small frames of sample data, we can&#8217;t actually test all frequencies from -&infin; to &infin;.  The Discrete Fourier transform (DFT) is a modification of the Fourier transform that works with discrete sampled data.  Our equations from above become:</p>
-
-<p><img class="center" src="/images/fourier/ft_eq2.png"></p>
-
-<p><img class="right" src="/images/fourier/sample_freqs.png"></p>
-
-<p> The DFT will test evenly spaced frequencies from 0 hz to the <em>sampling frequency</em> (S<sub>r</sub>).  For example, if we have a signal sampled at 44.1 kHz and 1024 samples <em>N</em>, the transform will test only the frequencies shown.  The time complexity of the standard DFT is <em>O(n<sup>2</sup>)</em>.</p>
-
-<h2>Making it Faster</h2>
-
-<p>In 1965, J.W. Cooley and John Turkey came up with a divide and conquer algorithm for calculating a <a href="http://en.wikipedia.org/wiki/Fast_Fourier_transform">Fast Fourier Transform</a> (FFT) in <em>O(n log n)</em> time.  To this day, this is the most widely used algorithm for Fourier transforms.</p>
-
-<p>The Cooley-Turkey algorithm is often referred to as a <em>radix-2</em> decimation-in-time (DIT) algorithm.  The algorithm works by recursively splitting the data into smaller frames of size N/2 until you are calculating the FFT of a single value, which is the value itself.  For this reason, the length of the input frames must be a power of 2.  On each iteration, the data is split by even and odd indexes.  This interleaving split is where the term &#8220;radix-2&#8221; comes from.  The term &#8220;decimation-in-time&#8221; comes from the fact that we are splitting indexes that correspond to time.</p>
-
-<p>Another important property of the DFT is that the outputs for <em>0 &le; k &lt; N/2</em> are identical to the outputs for <em>N/2 &le; k &lt; N</em>.  Taking this into account, the above DFT algorithm can be split into the following:</p>
-
-<p><img class="center" src="/images/fourier/fft_eq.png"></p>
-
-<p>Note that for the odd terms, we were able to pull out the phase factor.  This term is often referred to as the <em>twiddle factor</em>.</p>
-
-<p>There are many implementations of the FFT in different languages.  The fastest and most widely used implementation is <a href="http://www.fftw.org/">FFTW</a>, based on highly optimized C code.  One interesting thing about FFTW is that the C code is actually generated by an OCaml program called &#8216;genfft&#8217;.  In the next post, I&#8217;ll explore some implementations of the FFT in Scala.</p>
 </div>
 
 
@@ -178,12 +144,12 @@
   
 
 
-<time datetime="2013-03-02T10:50:00-07:00" pubdate data-updated="true">Mar 2<span>nd</span>, 2013</time>
+<time datetime="2013-08-24T14:54:00-06:00" pubdate data-updated="true">Aug 24<span>th</span>, 2013</time>
       
 
 <span class="categories">
   
-    <a class='category' href='/blog/categories/dsp/'>DSP</a>, <a class='category' href='/blog/categories/fft/'>FFT</a>, <a class='category' href='/blog/categories/fourier-transform/'>Fourier Transform</a>, <a class='category' href='/blog/categories/mir/'>MIR</a>, <a class='category' href='/blog/categories/math/'>Math</a>
+    <a class='category' href='/blog/categories/audio-/'>Audio,</a>, <a class='category' href='/blog/categories/data/'>Data</a>, <a class='category' href='/blog/categories/learning-/'>Learning,</a>, <a class='category' href='/blog/categories/midi-/'>MIDI,</a>, <a class='category' href='/blog/categories/mir-/'>MIR,</a>, <a class='category' href='/blog/categories/machine/'>Machine</a>, <a class='category' href='/blog/categories/python-/'>Python,</a>
   
 </span>
 
@@ -192,7 +158,7 @@
     
       <div class="sharing">
   
-  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://devonbryant.github.com/blog/2013/03/02/fourier-transforms/" data-via="devocode" data-counturl="http://devonbryant.github.com/blog/2013/03/02/fourier-transforms/" >Tweet</a>
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://devonbryant.github.com/blog/2013/08/24/midi-to-audio-conversion-with-python/" data-via="devocode" data-counturl="http://devonbryant.github.com/blog/2013/08/24/midi-to-audio-conversion-with-python/" >Tweet</a>
   
   
   <div class="g-plusone" data-size="medium"></div>
@@ -205,8 +171,8 @@
     
     <p class="meta">
       
+        <a class="basic-alignment left" href="/blog/2013/03/03/numerical-computing-with-scala/" title="Previous Post: Numerical Computing with Scala">&laquo; Numerical Computing with Scala</a>
       
-        <a class="basic-alignment right" href="/blog/2013/03/03/numerical-computing-with-scala/" title="Next Post: Numerical Computing with Scala">Numerical Computing with Scala &raquo;</a>
       
     </p>
   </footer>
@@ -319,8 +285,8 @@
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'http://devonbryant.github.com/blog/2013/03/02/fourier-transforms/';
-        var disqus_url = 'http://devonbryant.github.com/blog/2013/03/02/fourier-transforms/';
+        var disqus_identifier = 'http://devonbryant.github.com/blog/2013/08/24/midi-to-audio-conversion-with-python/';
+        var disqus_url = 'http://devonbryant.github.com/blog/2013/08/24/midi-to-audio-conversion-with-python/';
         var disqus_script = 'embed.js';
       
     (function () {

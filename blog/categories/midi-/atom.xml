@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: MIDI, | ~/dev/on]]></title>
+  <link href="http://devonbryant.github.com/blog/categories/midi-/atom.xml" rel="self"/>
+  <link href="http://devonbryant.github.com/"/>
+  <updated>2013-08-24T17:07:43-06:00</updated>
+  <id>http://devonbryant.github.com/</id>
+  <author>
+    <name><![CDATA[Devon Bryant]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[MIDI To Audio Conversion With Python]]></title>
+    <link href="http://devonbryant.github.com/blog/2013/08/24/midi-to-audio-conversion-with-python/"/>
+    <updated>2013-08-24T14:54:00-06:00</updated>
+    <id>http://devonbryant.github.com/blog/2013/08/24/midi-to-audio-conversion-with-python</id>
+    <content type="html"><![CDATA[<p>Last year I was working on a Music Information Retrieval (MIR) problem, trying to identify a song's key from audio recordings.  With many machine learning problems, one of the most difficult tasks is finding good data sets to train and test with.  While there are some good <a href="http://isophonics.net/datasets">annotated music datasets</a> out there, sometimes you need to generate your own test data.  This post includes a simple Python script we used to generate test data based on MIDI files.</p>
+
+<!-- more -->
+
+
+<p>For those interested in the actual song key identification research, the source code for that is available <a href="http://github.com/devonbryant/uccs-mir-key">here</a>.  The algorithm we used was based on Hidden Markov model classifiers and Beat-Synchronous Chromagram audio features.</p>
+
+<h2>Why MIDI?</h2>
+
+<p>Extracting annotations from a MIDI file is often much simpler than other formats because the timing information, instruments, and notes are all encoded in the file itself.  Unfortunately the default MIDI soundbanks on most computers are pretty terrible and don't sound like real instruments or musicians, so you don't want to use them for evaluating or training MIR systems.  However, there are many realistic soundfonts available online that can make a MIDI recording sound close to real instruments.  To avoid overfitting our system, we wanted to use real audio training sets with diverse instrument sounds (rock, jazz, classical, metal, etc.) so that the key identification was mostly genre-agnostic.</p>
+
+<h2>Conversion Script</h2>
+
+<p>The following Python script takes a directory of MIDI files and a directory of SF2 soundfont files and generates corresponding audio files (wav, aiff, mp3, etc.).  The selection of which soundfont is used for each MIDI file is random.  To use this script, you need to have <a href="http://sourceforge.net/apps/trac/fluidsynth/">FluidSynth</a> installed.</p>
+
+<p><div><script src='https://gist.github.com/1810984.js'></script>
+<noscript><pre><code></code></pre></noscript></div>
+</p>
+]]></content>
+  </entry>
+  
+</feed>
