@@ -105,18 +105,6 @@
 						<ul>
 							<li>Computationally expensive algorithms</li>
 							<li>Scalability with larger data sets</li>
-							<li>Existing systems based on imperative models
-								<ul>
-									<li>Optimized for single processor systems</li>
-									<li>Difficult transition to parallel environments</li>
-								</ul>
-							</li>
-							<li>Master/worker distribution models
-								<ul>
-									<li>Single point of failure</li>
-									<li>Single point bottlenecks</li>
-								</ul>
-							</li>
 						</ul>
 					</section>
 
@@ -171,164 +159,176 @@
 				</section>
 
 				<section>
-					<h2>Efficient Feature Extraction</h2>
-					<i>Features</i> described as a dataflow sequence of smaller computations (or sub-features)
-					<br><br>
-					<img src="images/feat_seqs_small.png"/>
+					<section>
+						<h2>Efficient Feature Extraction</h2>
+						<ul>
+							<li><i>Features</i> are described by a dataflow sequence of smaller computational steps (sub-features).</li>
+							<li>A <i>Feature Plan</i> forms a directed acyclic dataflow graph, eliminating redundant calculations <sup>1</sup>.</li>
+						</ul>
+						<br><br><br>
+						<small>
+							<sup>1</sup> Technique based on Yaafe and jAudio
+						</small>
+					</section>
+
+					<section>
+						<h2>Feature Dataflow</h2>
+						<br>
+						<img src="images/feat_seqs_small.png"/>
+					</section>
+
+					<section>
+						<h2>Feature Extraction Plan</h2>
+						<br>
+						<img src="images/feat_plan_small.png"/>
+					</section>
 				</section>
 
 				<section>
-					<h2>Efficient Feature Extraction (cont)</h2>
-					In an <i>Extraction Plan</i>, redundant calculations are eliminated to form an optimal dataflow graph <sup>1</sup>
-					<br><br>
-					<img src="images/feat_plan_small.png"/>
-					<br>
-					<small>
-						<sup>1</sup> Technique based on Yaafe and jAudio
-					</small>
+					<section>
+						<h2>Parallel Feature Extraction</h2>
+						Different levels of parallelism
+						<br><br>
+						<ul>
+							<li><i>File Level</i> - Concurrent extraction on multiple files</li>
+							<li><i>Plan Level</i> - Separate plan paths run concurrently</li>
+							<li><i>Feature Level</i> - Sub-features can run concurrently on separate sections (frames) of audio data</li>
+						</ul>
+					</section>
+
+					<section>
+						<h2>Plan Level Parallelism</h2>
+						<br>
+						<table style="width:100%">
+							<tr style="background-color:#DBC181">
+								<td style="text-align:center"> <sub>Proc</sub> \ <sup>Time</sup> </td>
+								<td/>
+								<td/>
+								<td/>
+							</tr>
+							<tr>
+								<td style="background-color:#DBC181"/>
+								<td style="text-align:center">FFT(<i>window</i><sub>1</sub>)</td>
+								<td style="text-align:center">Magnitude(<i>fft</i><sub>1</sub>)</td>
+								<td style="text-align:center">MFCC(<i>mag</i><sub>1</sub>)</td>
+							</tr>
+							<tr>
+								<td style="background-color:#DBC181"/>
+								<td/>
+								<td style="text-align:center">CQT(<i>fft</i><sub>1</sub>)</td>
+								<td style="text-align:center">Spec Shape(<i>mag</i><sub>1</sub>)</td>
+							</tr>
+						</table>
+						<br><br>
+						<small>
+							<b>Note:</b> These tables are used for illustrative purposes of where parallelism can occur.  They do not represent the actual thread scheduling or timing within the system.
+						</small>
+					</section>
+
+					<section>
+						<h2>Feature Level Parallelism</h2>
+						<br>
+						<table style="width:100%">
+							<tr style="background-color:#DBC181">
+								<td style="text-align:center"> <sub>Proc</sub> \ <sup>Time</sup> </td>
+								<td/>
+								<td/>
+								<td/>
+								<td/>
+							</tr>
+							<tr>
+								<td style="background-color:#DBC181"/>
+								<td style="text-align:center"><i>fr</i><sub>1</sub></td>
+								<td style="text-align:center">Window(<i>fr</i><sub>1</sub>)</td>
+								<td style="text-align:center">FFT(<i>win</i><sub>1</sub>)</td>
+								<td style="text-align:center">CQT(<i>fft</i><sub>1</sub>)</td>
+							</tr>
+							<tr>
+								<td style="background-color:#DBC181"/>
+								<td/>
+								<td style="text-align:center"><i>fr</i><sub>2</sub></td>
+								<td style="text-align:center">Window(<i>fr</i><sub>2</sub>)</td>
+								<td style="text-align:center">FFT(<i>win</i><sub>2</sub>)</td>
+							</tr>
+							<tr>
+								<td style="background-color:#DBC181"/>
+								<td/>
+								<td/>
+								<td style="text-align:center"><i>fr</i><sub>3</sub></td>
+								<td style="text-align:center">Window(<i>fr</i><sub>3</sub>)</td>
+							</tr>
+							<tr>
+								<td style="background-color:#DBC181"/>
+								<td/>
+								<td/>
+								<td/>
+								<td style="text-align:center"><i>fr</i><sub>4</sub></td>
+							</tr>
+						</table>
+						<br><br>
+						<small>
+							<b>Note:</b> These tables are used for illustrative purposes of where parallelism can occur.  They do not represent the actual thread scheduling or timing within the system.
+						</small>
+					</section>
+
+					<section>
+						<h2>Actor Model</h2>
+						<ul>
+							<li>Extraction plans are encoded in Actor hierarchies</li>
+							<li>Common messaging types
+								<ul>
+									<li><i>Splitter</i>* - Splits the work into smaller pieces (Files, Frames, etc.) for downstream processing</li>
+									<li><i>Transform</i>* - Most common type, providing simple mapping functions (Windowing, FFT, etc.)</li>
+									<li><i>Resequencer</i> - Takes a stream of potentially unordered messages and sends them out in order (CSV output, etc.)</li>
+									<li><i>Aggregator</i> - Run calculations across multiple frames (Spectral Flux, etc.)</li>
+								</ul>
+							</li>
+						</ul>
+						<br><br>
+						<small>
+							* Can be pooled with a round-robin routing strategy for highly concurrent systems
+						</small>
+					</section>
 				</section>
 
 				<section>
-					<h2>Parallel Feature Extraction</h2>
-					Different levels of parallelism
-					<br><br>
-					<ul>
-						<li><i>File Level</i> - Concurrent extraction on multiple files</li>
-						<li><i>Plan Level</i> - Separate plan paths run concurrently</li>
-						<li><i>Feature Level</i> - Sub-features can run concurrently on separate sections (frames) of audio data</li>
-					</ul>
-				</section>
+					<section>
+						<h2>Distributed Feature Extraction</h2>
+						<ul>
+							<li>Based on Akka clustering</li>
+							<li>Decentralized and masterless</li>
+							<li>Distribution Setup
+								<ul>
+									<li>Simple</li>
+									<li>Adaptive</li>
+								</ul>
+							</li>
+						</ul>
+					</section>
 
-				<section>
-					<h2>Plan Level Parallelism</h2>
-					<br>
-					<table style="width:100%">
-						<tr style="background-color:#DBC181">
-							<td style="text-align:center"> <sub>Proc</sub> \ <sup>Time</sup> </td>
-							<td/>
-							<td/>
-							<td/>
-						</tr>
-						<tr>
-							<td style="background-color:#DBC181"/>
-							<td style="text-align:center">FFT(<i>window</i><sub>1</sub>)</td>
-							<td style="text-align:center">Magnitude(<i>fft</i><sub>1</sub>)</td>
-							<td style="text-align:center">MFCC(<i>mag</i><sub>1</sub>)</td>
-						</tr>
-						<tr>
-							<td style="background-color:#DBC181"/>
-							<td/>
-							<td style="text-align:center">CQT(<i>fft</i><sub>1</sub>)</td>
-							<td style="text-align:center">Spec Shape(<i>mag</i><sub>1</sub>)</td>
-						</tr>
-					</table>
-					<br><br>
-					<small>
-						<b>Note:</b> These tables are used for illustrative purposes of where parallelism can occur.  They do not represent the actual thread scheduling or timing within the system.
-					</small>
-				</section>
+					<section>
+						<h2>Simple Distribution Setup</h2>
+						<ul>
+							<li>Audio files are distributed across the cluster (local file system)</li>
+							<li>Extraction message is broadcast to all nodes</li>
+							<li>Overall time is limited by the slowest node</li>
+						</ul>
+					</section>
 
-				<section>
-					<h2>Feature Level Parallelism</h2>
-					<br>
-					<table style="width:100%">
-						<tr style="background-color:#DBC181">
-							<td style="text-align:center"> <sub>Proc</sub> \ <sup>Time</sup> </td>
-							<td/>
-							<td/>
-							<td/>
-							<td/>
-						</tr>
-						<tr>
-							<td style="background-color:#DBC181"/>
-							<td style="text-align:center"><i>fr</i><sub>1</sub></td>
-							<td style="text-align:center">Window(<i>fr</i><sub>1</sub>)</td>
-							<td style="text-align:center">FFT(<i>win</i><sub>1</sub>)</td>
-							<td style="text-align:center">CQT(<i>fft</i><sub>1</sub>)</td>
-						</tr>
-						<tr>
-							<td style="background-color:#DBC181"/>
-							<td/>
-							<td style="text-align:center"><i>fr</i><sub>2</sub></td>
-							<td style="text-align:center">Window(<i>fr</i><sub>2</sub>)</td>
-							<td style="text-align:center">FFT(<i>win</i><sub>2</sub>)</td>
-						</tr>
-						<tr>
-							<td style="background-color:#DBC181"/>
-							<td/>
-							<td/>
-							<td style="text-align:center"><i>fr</i><sub>3</sub></td>
-							<td style="text-align:center">Window(<i>fr</i><sub>3</sub>)</td>
-						</tr>
-						<tr>
-							<td style="background-color:#DBC181"/>
-							<td/>
-							<td/>
-							<td/>
-							<td style="text-align:center"><i>fr</i><sub>4</sub></td>
-						</tr>
-					</table>
-					<br><br>
-					<small>
-						<b>Note:</b> These tables are used for illustrative purposes of where parallelism can occur.  They do not represent the actual thread scheduling or timing within the system.
-					</small>
-				</section>
-
-				<section>
-					<h2>Actor Model</h2>
-					<ul>
-						<li>Extraction plans are encoded in Actor hierarchies</li>
-						<li>Common messaging types
-							<ul>
-								<li><i>Splitter</i>* - Splits the work into smaller pieces (Files, Frames, etc.) for downstream processing</li>
-								<li><i>Transform</i>* - Most common type, providing simple mapping functions (Windowing, FFT, etc.)</li>
-								<li><i>Resequencer</i> - Takes a stream of potentially unordered messages and sends them out in order (CSV output, etc.)</li>
-								<li><i>Aggregator</i> - Run calculations across multiple frames (Spectral Flux, etc.)</li>
-							</ul>
-						</li>
-					</ul>
-					<br><br>
-					<small>
-						* Can be pooled with a round-robin routing strategy for highly concurrent systems
-					</small>
-				</section>
-
-				<section>
-					<h2>Distributed Feature Extraction</h2>
-					<ul>
-						<li>Based on Akka clustering</li>
-						<li>Decentralized and masterless</li>
-						<li>Distribution Setup
-							<ul>
-								<li>Simple</li>
-								<li>Adaptive</li>
-							</ul>
-						</li>
-					</ul>
-				</section>
-
-				<section>
-					<h2>Simple Distribution Setup</h2>
-					<ul>
-						<li>Audio files are distributed across the cluster (local file system)</li>
-						<li>Extraction message is broadcast to all nodes</li>
-						<li>Overall time is limited by the slowest node</li>
-					</ul>
-				</section>
-
-				<section>
-					<h2>Adaptive Distribution Setup</h2>
-					<ul>
-						<li>Audio files stored in Hadoop Distributed File System (HDFS)</li>
-						<li>Probabilistic Adaptive Load Balancing Router
-							<ul>
-								<li><i>Heap</i> - Remaining JVM heap capacity</li>
-								<li><i>Load</i> - System load average over past minute</li>
-								<li><i>CPU</i> - Percentage of CPU utilization</li>
-								<li><i>Locality</i> - Location of data in HDFS</li>
-							</ul>
-						</li>
-					</ul>
+					<section>
+						<h2>Adaptive Distribution Setup</h2>
+						<ul>
+							<li>Audio files stored in Hadoop Distributed File System (HDFS)</li>
+							<li>Probabilistic Adaptive Load Balancing Router
+								<ul>
+									<li><i>Heap</i> - Remaining JVM heap capacity</li>
+									<li><i>Load</i> - System load average over past minute</li>
+									<li><i>CPU</i> - Percentage of CPU utilization</li>
+									<li><i>Locality</i> - Location of data in HDFS</li>
+								</ul>
+							</li>
+						</ul>
+					</section>
 				</section>
 
 				<section>
@@ -382,6 +382,11 @@
 							<td style="padding: 4px; border: none">November 13 2013</td>
 							<td style="padding: 4px; border: none">Thesis Defense</td>
 						</tr>
+					</table>
+				</section>
+
+				<section>
+					<h1>The End</h1>
 				</section>
 
 				<!-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END OF SLIDES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
