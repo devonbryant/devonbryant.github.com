@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Thesis Proposal - Scalable Audio Feature Extraction</title>
+
+		<meta name="description" content="A thesis proposal on Safe, a scalable audio feature extraction framework">
+		<meta name="author" content="Devon Bryant">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="../../reveal/css/reveal.min.css">
+		<!-- <link rel="stylesheet" href="../../reveal/css/theme/default.css" id="theme"> -->
+		<link rel="stylesheet" href="../../reveal/css/theme/beige.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="../../reveal/lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="../../reveal/css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+
+				<section>
+					<h1>Scalable Audio Feature Extraction</h1>
+					<br>
+					<h5>A Proposal Presented to the Faculty of</h5>
+					<h5>University of Colorado at Colorado Springs</h5>
+					<br>
+					<h5>Department of Computer Science</h5>
+					<h5>Adviser: Dr. Rory Lewis</h5>
+					<br>
+					<small>
+					Devon Bryant, October 2013
+					</small>
+				</section>
+
+				<section>
+					<h2>Resources</h2>
+					<br>
+					Slides: <p><a href="http://devonbryant.github.io/thesis/proposal">devonbryant.github.io/thesis/proposal</a>
+					<br><br>
+					Paper: <p><a href="http://devonbryant.github.io/thesis/proposal/proposal.pdf">devonbryant.github.io/thesis/proposal/proposal.pdf</a>
+				</section>
+
+				<section>
+					<h1>Introduction</h1>
+				</section>
+
+				<section>
+					<h2>Background</h2>
+					<ul>
+						<li><i>Music Information Retrieval</i> (MIR)
+							<ul>
+								<li>Recommendation systems</li>
+								<li>Classification</li>
+								<li>Identification</li>
+								<li>Automatic transcription</li>
+								<li>Similarity searching</li>
+								<li>etc.</li>
+							</ul>
+						</li>
+						<li><i>Audio Feature Extraction (AFE)</i> - Algorithms ranging from low-level DSP to high-level machine learning.</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Related Work</h2>
+					<ul>
+						<li><a href="http://sourceforge.net/projects/marsyas/">Marsyas</a>* - Efficient C++ library with a long history.</li>
+						<li><a href="http://yaafe.sourceforge.net/">Yaafe</a> - Fast & efficient C++/Python library.</li>
+						<li><a href="http://jmir.sourceforge.net/">jAudio</a>* - Java framework for MIR researchers.</li>
+						<li><a href="http://github.com/jamiebullock/LibXtract">LibXtract</a> - Optimized C algorithms for AFE.</li>
+						<li><a href="http://www.vamp-plugins.org/">VAMP Plugins</a> - C++ API with numerous plugins.</li>
+						<li>iSoundMW - Distributed AFE and similarity search engine.</li>
+						<li><a href="http://www.jyu.fi/hum/laitokset/musiikki/en/research/coe/materials/mirtoolbox">MIRtoolbox</a> - Matlab library for MIR algorithms.</li>
+						<li><a href="http://opensmile.sourceforge.net/">openSMILE</a> - C++ library for real-time Speech and MIR.</li>
+					</ul>
+					<br><br>
+					<small>
+						* Extensions for distributed computing through existing research
+					</small>
+				</section>
+
+				<section>
+					<section>
+						<h2>The Overall Problem</h2>
+						<ul>
+							<li>Computationally expensive algorithms</li>
+							<li>Scalability with larger data sets</li>
+							<li>Existing systems based on imperative models
+								<ul>
+									<li>Optimized for single processor systems</li>
+									<li>Difficult transition to parallel environments</li>
+								</ul>
+							</li>
+							<li>Master/worker distribution models
+								<ul>
+									<li>Single point of failure</li>
+									<li>Single point bottlenecks</li>
+								</ul>
+							</li>
+						</ul>
+					</section>
+
+					<section>
+						<h3>How do existing systems address these problems?</h3>
+						<ul>
+							<li>Dataflow analysis, eliminate redundant computations</li>
+							<li>Optimized algorithms and performant languages</li>
+							<li>Distirubuted computing</li>
+						</ul>
+					</section>
+
+					<section>
+						<h3>What issues do current approaches have?</h3>
+						<ul>
+							<li>Parallel computing & vertical scalability
+								<ul>
+									<li>Imperative techniques are difficult to transition</li>
+								</ul>
+							</li>
+							<li>Master/worker distribution models
+								<ul>
+									<li>Single point of failure</li>
+									<li>Single point bottlenecks</li>
+								</ul>
+							</li>
+						</ul>
+					</section>
+				</section>
+
+				<section>
+					<h1>Approach</h1>
+				</section>
+
+				<section>
+					<h2>Research Description</h2>
+					<ul>
+						<li>Extend and adapt existing MIR techniques & algorithms
+							<ul>
+								<li>Functional, asynchronous and reactive</li>
+								<li>Based on <a href="http://www.scala-lang.org/">Scala</a> and <a href="http://akka.io/">Akka</a></li>
+							</ul>
+						</li>
+						<li>Primary focus
+							<ul>
+								<li>Algorithmic Efficiency</li>
+								<li>Parallel Computing</li>
+								<li>Distributed Computing</li>
+							</ul>
+						</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Efficient Feature Extraction</h2>
+					<i>Features</i> described as a dataflow sequence of smaller computations (or sub-features)
+					<br><br>
+					<img src="images/feat_seqs_small.png"/>
+				</section>
+
+				<section>
+					<h2>Efficient Feature Extraction (cont)</h2>
+					In an <i>Extraction Plan</i>, redundant calculations are eliminated to form an optimal dataflow graph <sup>1</sup>
+					<br><br>
+					<img src="images/feat_plan_small.png"/>
+					<br>
+					<small>
+						<sup>1</sup> Technique based on Yaafe and jAudio
+					</small>
+				</section>
+
+				<section>
+					<h2>Parallel Feature Extraction</h2>
+					Different levels of parallelism
+					<br><br>
+					<ul>
+						<li><i>File Level</i> - Concurrent extraction on multiple files</li>
+						<li><i>Plan Level</i> - Separate plan paths run concurrently</li>
+						<li><i>Feature Level</i> - Sub-features can run concurrently on separate sections (frames) of audio data</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Plan Level Parallelism</h2>
+					<br>
+					<table style="width:100%">
+						<tr style="background-color:#DBC181">
+							<td style="text-align:center"> <sub>Proc</sub> \ <sup>Time</sup> </td>
+							<td/>
+							<td/>
+							<td/>
+						</tr>
+						<tr>
+							<td style="background-color:#DBC181"/>
+							<td style="text-align:center">FFT(<i>window</i><sub>1</sub>)</td>
+							<td style="text-align:center">Magnitude(<i>fft</i><sub>1</sub>)</td>
+							<td style="text-align:center">MFCC(<i>mag</i><sub>1</sub>)</td>
+						</tr>
+						<tr>
+							<td style="background-color:#DBC181"/>
+							<td/>
+							<td style="text-align:center">CQT(<i>fft</i><sub>1</sub>)</td>
+							<td style="text-align:center">Spec Shape(<i>mag</i><sub>1</sub>)</td>
+						</tr>
+					</table>
+					<br><br>
+					<small>
+						<b>Note:</b> These tables are used for illustrative purposes of where parallelism can occur.  They do not represent the actual thread scheduling or timing within the system.
+					</small>
+				</section>
+
+				<section>
+					<h2>Feature Level Parallelism</h2>
+					<br>
+					<table style="width:100%">
+						<tr style="background-color:#DBC181">
+							<td style="text-align:center"> <sub>Proc</sub> \ <sup>Time</sup> </td>
+							<td/>
+							<td/>
+							<td/>
+							<td/>
+						</tr>
+						<tr>
+							<td style="background-color:#DBC181"/>
+							<td style="text-align:center"><i>fr</i><sub>1</sub></td>
+							<td style="text-align:center">Window(<i>fr</i><sub>1</sub>)</td>
+							<td style="text-align:center">FFT(<i>win</i><sub>1</sub>)</td>
+							<td style="text-align:center">CQT(<i>fft</i><sub>1</sub>)</td>
+						</tr>
+						<tr>
+							<td style="background-color:#DBC181"/>
+							<td/>
+							<td style="text-align:center"><i>fr</i><sub>2</sub></td>
+							<td style="text-align:center">Window(<i>fr</i><sub>2</sub>)</td>
+							<td style="text-align:center">FFT(<i>win</i><sub>2</sub>)</td>
+						</tr>
+						<tr>
+							<td style="background-color:#DBC181"/>
+							<td/>
+							<td/>
+							<td style="text-align:center"><i>fr</i><sub>3</sub></td>
+							<td style="text-align:center">Window(<i>fr</i><sub>3</sub>)</td>
+						</tr>
+						<tr>
+							<td style="background-color:#DBC181"/>
+							<td/>
+							<td/>
+							<td/>
+							<td style="text-align:center"><i>fr</i><sub>4</sub></td>
+						</tr>
+					</table>
+					<br><br>
+					<small>
+						<b>Note:</b> These tables are used for illustrative purposes of where parallelism can occur.  They do not represent the actual thread scheduling or timing within the system.
+					</small>
+				</section>
+
+				<section>
+					<h2>Actor Model</h2>
+					<ul>
+						<li>Extraction plans are encoded in Actor hierarchies</li>
+						<li>Common messaging types
+							<ul>
+								<li><i>Splitter</i>* - Splits the work into smaller pieces (Files, Frames, etc.) for downstream processing</li>
+								<li><i>Transform</i>* - Most common type, providing simple mapping functions (Windowing, FFT, etc.)</li>
+								<li><i>Resequencer</i> - Takes a stream of potentially unordered messages and sends them out in order (CSV output, etc.)</li>
+								<li><i>Aggregator</i> - Run calculations across multiple frames (Spectral Flux, etc.)</li>
+							</ul>
+						</li>
+					</ul>
+					<br><br>
+					<small>
+						* Can be pooled with a round-robin routing strategy for highly concurrent systems
+					</small>
+				</section>
+
+				<section>
+					<h2>Distributed Feature Extraction</h2>
+					<ul>
+						<li>Based on Akka clustering</li>
+						<li>Decentralized and masterless</li>
+						<li>Distribution Setup
+							<ul>
+								<li>Simple</li>
+								<li>Adaptive</li>
+							</ul>
+						</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Simple Distribution Setup</h2>
+					<ul>
+						<li>Audio files are distributed across the cluster (local file system)</li>
+						<li>Extraction message is broadcast to all nodes</li>
+						<li>Overall time is limited by the slowest node</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Adaptive Distribution Setup</h2>
+					<ul>
+						<li>Audio files stored in Hadoop Distributed File System (HDFS)</li>
+						<li>Probabilistic Adaptive Load Balancing Router
+							<ul>
+								<li><i>Heap</i> - Remaining JVM heap capacity</li>
+								<li><i>Load</i> - System load average over past minute</li>
+								<li><i>CPU</i> - Percentage of CPU utilization</li>
+								<li><i>Locality</i> - Location of data in HDFS</li>
+							</ul>
+						</li>
+					</ul>
+				</section>
+
+				<section>
+					<h1>Research Plan</h1>
+				</section>
+
+				<section>
+					<h2>Evaluation</h2>
+					<ul>
+						<li>Compare extraction times on a single machine (multiple cores) with other MIR libraries</li>
+						<li>Evaluate extraction times for different cluster sizes and configurations</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Timeline</h2>
+					<table style="width:100%; border:none">
+						<tr>
+							<td style="padding: 4px"><b>Date</b></td>
+							<td style="padding: 4px"><b>Task</b></td>
+						</tr>
+						<tr>
+							<td style="padding: 4px; border: none">February 20 2013</td>
+							<td style="padding: 4px; border: none">Background Research</td>
+						</tr>
+						<tr>
+							<td style="padding: 4px; border: none">May 1 2013</td>
+							<td style="padding: 4px; border: none">Feature Extraction Algorithms</td>
+						</tr>
+						<tr>
+							<td style="padding: 4px; border: none">August 19 2013</td>
+							<td style="padding: 4px; border: none">Parallel Extraction Capabilities</td>
+						</tr>
+						<tr>
+							<td style="padding: 4px; border: none">October 1 2013</td>
+							<td style="padding: 4px; border: none">Thesis Proposal</td>
+						</tr>
+						<tr>
+							<td style="padding: 4px; border: none">October 9 2013</td>
+							<td style="padding: 4px; border: none">Baseline System Evaluation</td>
+						</tr>
+						<tr>
+							<td style="padding: 4px; border: none">October 18 2013</td>
+							<td style="padding: 4px; border: none">Distributed Extraction Capabilities</td>
+						</tr>
+						<tr>
+							<td style="padding: 4px; border: none">November 1 2013</td>
+							<td style="padding: 4px; border: none">Distributed Performance Evaluation</td>
+						</tr>
+						<tr>
+							<td style="padding: 4px; border: none">November 13 2013</td>
+							<td style="padding: 4px; border: none">Thesis Defense</td>
+						</tr>
+				</section>
+
+				<!-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END OF SLIDES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
+
+			</div>
+
+		</div>
+
+		<script src="../../reveal/lib/js/head.min.js"></script>
+		<script src="../../reveal/js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: '../../reveal/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: '../../reveal/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../reveal/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../reveal/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '../../reveal/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: '../../reveal/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
