@@ -98,7 +98,7 @@
 						</ul>
 						<br/><br/>
 						<small>
-							See <a href="http://www.music-ir.org/mirex/wiki/MIREX_HOME">MIREX</a> for more info on current research.
+							See <a href="http://www.ismir.net/">ISMIR</a> and <a href="http://www.music-ir.org/mirex/wiki/MIREX_HOME">MIREX</a> for more info on current research.
 						</small>
 					</section>
 					<section>
@@ -129,13 +129,13 @@
 				</section>
 
 				<section>
-					<h2>Audio Signal Data</h2>
+					<h2>Audio in the Time Domain</h2>
 					<img src="images/sound.jpg"/>
 				</section>
 
 				<section>
 					<section>
-						<h3>Sound Waveforms & The Time Domain</h3>
+						<h3>Sound Waveforms</h3>
 						<img src="images/speaker-waveform.jpg"/>
 					</section>
 					<section>
@@ -158,14 +158,14 @@
 				</section>
 
 				<section>
-					<h2>Digital Signal Processing</h2>
+					<h2>Audio in the Frequency Domain</h2>
 					<img src="images/dsp.png"/>
 				</section>
 
 				<section>
 					<section>
-						<h3>The Frequency Domain</h3>
-						Many algorithms work in the frequency domain.
+						<h3>Fourier Transforms</h3>
+						Signal represented as a sum of simple sine and cosine functions.
 						<img src="images/fourier_transform.png"/>
 						<br/>
 						How do we move from time -> frequency and vice versa?
@@ -178,11 +178,51 @@
 					</section>
 					<section>
 						<h3>Fourier Transforms for the rest of us</h3>
+						Two periodic signals, <b>A</b> (input signal) and <b>B</b> (generated).
+						<br/>
+						<img src="images/siga_sigb.png"/>
+					</section>
+					<section>
+						What happens when we multiply them together and sum the area underneath?
+						<br/>
+						<img src="images/siga_b_mult.png"/>
+					</section>
+					<section>
+						What if the signals share the same frequency, say <b>A</b> X <b>A</b>?
+						<br/>
+						<img src="images/siga2.png"/>
+					</section>
+					<section>
+						<h3>Discrete Fourier Transform (DFT)</h3>
+						Evenly spaced frequencies from 0 hz to the <i>sampling frequency</i>.
+						<br/><br/>
+						<img src="images/sample_freqs.png"/>
+						<br/>
+						<small>
+							Frequency bins for 1024 samples @ 44.1 KHz
+						</small>
+					</section>
+					<section>
+						<h3>No temporal information in the frequency domain</h3>
+						<br/>
+						<ul>
+							<li>What if you have two sounds at different times?</li>
+							<li>How do you deal with this?</li>
+						</ul>
+					</section>
+					<section>
+						<h3>The Short-Time Fourier Transform (STFT)</h3>
+						<img src="images/time-freq.png"/>
 					</section>
 				</section>
 
 				<section>
-					<h1>The End</h1>
+					<h3>Additional Resources</h3>
+					<ul>
+						<li><a href="http://www.ee.columbia.edu/~dpwe/">Dan Ellis Homepage</a></li>
+						<li><a href="http://www.amazon.com/Understanding-Digital-Signal-Processing-3rd/dp/0137027419">Understanding Digital Signal Processing</a></li>
+						<li><a href="http://www.amazon.com/Speech-Audio-Signal-Processing-Perception/dp/0470195363">Speech and Audio Signal Processing</a></li>
+					</ul>
 				</section>
 
 				<!-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END OF SLIDES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
