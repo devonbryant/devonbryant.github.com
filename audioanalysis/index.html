@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Audio Analysis</title>
+
+		<meta name="description" content="An introduction to Audio Analysis">
+		<meta name="author" content="Devon Bryant">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="../reveal/css/reveal.min.css">
+		<!-- <link rel="stylesheet" href="../reveal/css/theme/default.css" id="theme"> -->
+		<link rel="stylesheet" href="../reveal/css/theme/moon.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="../reveal/lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="../reveal/css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+
+				<section>
+					<h1>Introduction to Audio Analysis</h1>
+				</section>
+
+				<section>
+					<h2>Follow Along</h2>
+					<br>
+					Slides: <a href="http://devonbryant.github.io/audioanalysis">devonbryant.github.io/audioanalysis</a>
+				</section>
+
+				<section>
+					<table width="100%">
+						<tr>
+							<td style="vertical-align:middle"><h2>About Me</h2></td>
+							<td><img src="../images/devo.png" height="150"></img></td>
+						</tr>
+					</table>
+					<ul>
+						<li>Weekdays</li>
+						<ul>
+							<li>Intelligent Software Solutions (ISS)</li>
+							<li>Predictive Analytics, Machine Learning, Anomaly Detection, Plan Monitoring</li>
+						</ul>
+						<li>Evenings & Weekends</li>
+						<ul>
+							<li>Graduate Student at UCCS</li>
+							<li>Music Information Retrieval, Functional Programming</li>
+							<li><a href="http://github.com/devonbryant">github.com/devonbryant</a></li>
+						</ul>
+					</ul>
+				</section>
+
+				<section>
+					<h2>What is Audio Analysis?</h2>
+					<img src="images/sound-waves.jpg"/>
+				</section>
+
+				<section>
+					<section>
+						<h3>Extracting information from audio signals</h3>
+						Leveraging techniques from <i>Digital Signal Processing</i> (DSP) and <i>Machine Learning</i>.
+						<br/><br/>
+						<ul>
+							<li>Music Information Retrieval</li>
+							<li>Speech Processing</li>
+						</ul>
+					</section>
+					<section>
+						<h3>Music Information Retrieval</h3>
+						<ul>
+							<li>Recommender Systems</li>
+							<li>Instrument Recognition</li>
+							<li>Music Transcription (Beats, Notes, Chords, Key, etc.)</li>
+							<li>Genre Classification</li>
+							<li>Score Following</li>
+							<li>Query by Singing/Humming</li>
+							<li>Similarity</li>
+						</ul>
+						<br/><br/>
+						<small>
+							See <a href="http://www.ismir.net/">ISMIR</a> and <a href="http://www.music-ir.org/mirex/wiki/MIREX_HOME">MIREX</a> for more info on current research.
+						</small>
+					</section>
+					<section>
+						<h3>Speech Processing</h3>
+						<ul>
+							<li>Voice Recognition</li>
+							<li>Speaker Recognition</li>
+							<li>Speaker Diarization</li>
+							<li>Voice Analysis</li>
+							<li>Speech Enhancement</li>
+						</ul>
+					</section>
+				</section>
+
+				<section>
+					<h3>Tools of the Trade</h3>
+					<ul>
+						<li><a href="http://sourceforge.net/projects/marsyas/">Marsyas</a></li>
+						<li><a href="http://yaafe.sourceforge.net/">Yaafe</a></li>
+						<li><a href="http://jmir.sourceforge.net/">jAudio</a></li>
+						<li><a href="http://github.com/jamiebullock/LibXtract">LibXtract</a></li>
+						<li><a href="http://www.sonicvisualiser.org/">Sonic Visualiser</a> & <a href="http://www.vamp-plugins.org/">VAMP Plugins</a></li>
+						<li><a href="http://www.jyu.fi/hum/laitokset/musiikki/en/research/coe/materials/mirtoolbox">MIRtoolbox</a></li>
+						<li><a href="http://opensmile.sourceforge.net/">openSMILE</a></li>
+						<li><a href="http://www.cstr.ed.ac.uk/projects/speech_tools/">Edinburgh Speech Tools</a></li>
+						<li><a href="http://www.ee.ic.ac.uk/hp/staff/dmb/voicebox/voicebox.html">Voicebox</a></li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Audio in the Time Domain</h2>
+					<img src="images/sound.jpg"/>
+				</section>
+
+				<section>
+					<section>
+						<h3>Sound Waveforms</h3>
+						<img src="images/speaker-waveform.jpg"/>
+					</section>
+					<section>
+						<h3>Pulse-code Modulation (PCM)</h3>
+						<img src="images/pcm.png"/>
+						<br/>
+						<small>
+							Example 4-bit PCM Encoding
+						</small>
+					</section>
+					<section>
+						<h3>Sampling Rate & Nyquist Frequency</h3>
+						<img src="images/aliasing.jpg"/>
+						<br/>
+						<ul>
+							<li>Nyquist Freq. = 2 times max frequency</li>
+							<li>CD Quality Audio (44.1 KHz, 16-bit stereo)</li>
+						</ul>
+					</section>
+				</section>
+
+				<section>
+					<h2>Audio in the Frequency Domain</h2>
+					<img src="images/dsp.png"/>
+				</section>
+
+				<section>
+					<section>
+						<h3>Fourier Transforms</h3>
+						Signal represented as a sum of simple sine and cosine functions.
+						<img src="images/fourier_transform.png"/>
+						<br/>
+						How do we move from time -> frequency and vice versa?
+					</section>
+					<section>
+						<h3>Fourier Transforms for Mathematicians</h3>
+						<img src = "images/ft_eq1.png"/>
+						<br/>
+						<img src = "images/ft_eq2.png"/>
+					</section>
+					<section>
+						<h3>Fourier Transforms for the rest of us</h3>
+						Two periodic signals, <b>A</b> (input signal) and <b>B</b> (generated).
+						<br/>
+						<img src="images/siga_sigb.png"/>
+					</section>
+					<section>
+						What happens when we multiply them together and sum the area underneath?
+						<br/>
+						<img src="images/siga_b_mult.png"/>
+					</section>
+					<section>
+						What if the signals share the same frequency, say <b>A</b> X <b>A</b>?
+						<br/>
+						<img src="images/siga2.png"/>
+					</section>
+					<section>
+						<h3>Discrete Fourier Transform (DFT)</h3>
+						Evenly spaced frequencies from 0 hz to the <i>sampling frequency</i>.
+						<br/><br/>
+						<img src="images/sample_freqs.png"/>
+						<br/>
+						<small>
+							Frequency bins for 1024 samples @ 44.1 KHz
+						</small>
+					</section>
+					<section>
+						<h3>No temporal information in the frequency domain</h3>
+						<br/>
+						<ul>
+							<li>What if you have two sounds at different times?</li>
+							<li>How do you deal with this?</li>
+						</ul>
+					</section>
+					<section>
+						<h3>The Short-Time Fourier Transform (STFT)</h3>
+						<img src="images/time-freq.png"/>
+					</section>
+				</section>
+
+				<section>
+					<h3>Additional Resources</h3>
+					<ul>
+						<li><a href="http://www.ee.columbia.edu/~dpwe/">Dan Ellis Homepage</a></li>
+						<li><a href="http://www.amazon.com/Understanding-Digital-Signal-Processing-3rd/dp/0137027419">Understanding Digital Signal Processing</a></li>
+						<li><a href="http://www.amazon.com/Speech-Audio-Signal-Processing-Perception/dp/0470195363">Speech and Audio Signal Processing</a></li>
+					</ul>
+				</section>
+
+				<!-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END OF SLIDES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
+
+			</div>
+
+		</div>
+
+		<script src="../reveal/lib/js/head.min.js"></script>
+		<script src="../reveal/js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'linear', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: '../reveal/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: '../reveal/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../reveal/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../reveal/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '../reveal/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: '../reveal/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
