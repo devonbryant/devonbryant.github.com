@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Thesis - Scalable Audio Feature Extraction</title>
+
+		<meta name="description" content="Thesis slides on Safe, a scalable audio feature extraction framework">
+		<meta name="author" content="Devon Bryant">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="../../reveal/css/reveal.min.css">
+		<!-- <link rel="stylesheet" href="../../reveal/css/theme/default.css" id="theme"> -->
+		<link rel="stylesheet" href="../../reveal/css/theme/beige.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="../../reveal/lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="../../reveal/css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+
+				<section>
+					<h1>Scalable Audio Feature Extraction</h1>
+					<br>
+					<h5>A Thesis Presented to the Faculty of</h5>
+					<h5>University of Colorado at Colorado Springs</h5>
+					<br>
+					<h5>Department of Computer Science</h5>
+					<h5>Adviser: Dr. Rory Lewis</h5>
+					<br>
+					<small>
+					Devon Bryant, April 2014
+					</small>
+				</section>
+
+				<section>
+					<h2>Resources</h2>
+					<br>
+					Slides: <p><a href="http://devonbryant.github.io/thesis/final">devonbryant.github.io/thesis/final</a>
+					<br><br>
+					Paper: <p><a href="http://devonbryant.github.io/thesis/final/safe.pdf">devonbryant.github.io/thesis/final/safe.pdf</a>
+				</section>
+
+				<section>
+					<h1>Introduction</h1>
+				</section>
+
+				<section>
+					<h2>Background</h2>
+					<ul>
+						<li><i>Music Information Retrieval</i> (MIR)
+							<ul>
+								<li>Recommendation systems</li>
+								<li>Classification</li>
+								<li>Identification</li>
+								<li>Automatic transcription</li>
+								<li>Similarity searching</li>
+								<li>etc.</li>
+							</ul>
+						</li>
+						<li><i>Audio Feature Extraction (AFE)</i> - Algorithms ranging from low-level DSP to high-level machine learning.</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Related Work</h2>
+					<ul>
+						<li><a href="http://sourceforge.net/projects/marsyas/">Marsyas</a><sup>1</sup> - Efficient C++ library with a long history.</li>
+						<li><a href="http://yaafe.sourceforge.net/">Yaafe</a> - Fast & efficient C++/Python library.</li>
+						<li><a href="http://jmir.sourceforge.net/">jAudio</a><sup>1</sup> - Java framework for MIR researchers.</li>
+						<li><a href="http://github.com/jamiebullock/LibXtract">LibXtract</a> - Optimized C algorithms for AFE.</li>
+						<li><a href="http://www.vamp-plugins.org/sonic-annotator/">Sonic Annotator</a> - Bulk extraction based on VAMP plugins.</li>
+						<li>iSoundMW - Distributed AFE and similarity search engine.</li>
+						<li><a href="http://www.jyu.fi/hum/laitokset/musiikki/en/research/coe/materials/mirtoolbox">MIRtoolbox</a><sup>2</sup> - Matlab library for MIR algorithms.</li>
+						<li><a href="http://opensmile.sourceforge.net/">openSMILE</a><sup>2</sup> - C++ library for real-time Speech and MIR.</li>
+					</ul>
+					<br><br>
+					<small>
+						<sup>1</sup> Extensions for distributed computing through existing research <br>
+						<sup>2</sup> Support for multi-threaded/parallel extraction
+					</small>
+				</section>
+
+				<section>
+					<section>
+						<h2>The Overall Problem</h2>
+						<ul>
+							<li>Computationally expensive algorithms</li>
+							<li>Scalability with larger data sets
+								<ul>
+									<li>Spotify
+										<ul>
+											<li>20,000 Songs a day</li>
+											<li>Over 20 million songs <sup>1</sup></li>
+										</ul>
+									</li>
+									<li>Apple iTunes
+										<ul>
+											<li>Over 26 million songs <sup>2</sup></li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+						<br><br><br>
+						<small>
+							<sup>1</sup> <a href="http://press.spotify.com/us/information/">http://press.spotify.com/us/information/</a>
+							<br>
+							<sup>2</sup> <a href="http://www.apple.com/pr/library/2013/02/06iTunes-Store-Sets-New-Record-with-25-Billion-Songs-Sold.html">http://www.apple.com/pr/library/2013/02/06iTunes-Store-Sets-New-Record-with-25-Billion-Songs-Sold.html</a>
+						</small>
+					</section>
+
+					<section>
+						<h3>How do existing systems address these problems?</h3>
+						<ul>
+							<li>Dataflow analysis, eliminate redundant computations</li>
+							<li>Optimized algorithms and performant languages</li>
+							<li>Distirubuted computing</li>
+						</ul>
+					</section>
+
+					<section>
+						<h3>What issues do current approaches have?</h3>
+						<ul>
+							<li>Parallel computing & vertical scalability
+								<ul>
+									<li>Imperative techniques are difficult to transition</li>
+								</ul>
+							</li>
+							<li>Master/worker distribution models
+								<ul>
+									<li>Single point of failure</li>
+									<li>Single point bottlenecks</li>
+								</ul>
+							</li>
+						</ul>
+					</section>
+				</section>
+
+				<section>
+					<h1>Approach</h1>
+				</section>
+
+				<section>
+					<h2>Research Description</h2>
+					<ul>
+						<li>Extend and adapt existing MIR techniques & algorithms
+							<ul>
+								<li>Functional, asynchronous and reactive</li>
+								<li>Based on <a href="http://www.scala-lang.org/">Scala</a> and <a href="http://akka.io/">Akka</a></li>
+							</ul>
+						</li>
+						<li>Primary focus
+							<ul>
+								<li>Algorithmic Efficiency</li>
+								<li>Parallel Computing</li>
+								<li>Distributed Computing</li>
+							</ul>
+						</li>
+					</ul>
+				</section>
+
+				<section>
+					<section>
+						<h2>Efficient Feature Extraction</h2>
+						<ul>
+							<li><i>Features</i> are described by a dataflow sequence of smaller computational steps (sub-features).</li>
+							<li><i>Extraction Plans</i> form directed acyclic dataflow graphs, eliminating redundant calculations <sup>1</sup>.</li>
+						</ul>
+						<br><br><br>
+						<small>
+							<sup>1</sup> Technique based on Yaafe and jAudio
+						</small>
+					</section>
+
+					<section>
+						<h2>Feature Dataflow</h2>
+						<br>
+						<img src="images/feat_seqs_small.png"/>
+					</section>
+
+					<section>
+						<h2>Feature Extraction Plan</h2>
+						<br>
+						<img src="images/feat_plan_small.png"/>
+					</section>
+				</section>
+
+				<section>
+					<section>
+						<h2>Parallel Feature Extraction</h2>
+						Different levels of parallelism
+						<br><br>
+						<ul>
+							<li><i>File Level</i> - Concurrent extraction on multiple files</li>
+							<li><i>Plan Level</i> - Separate plan paths run concurrently</li>
+							<li><i>Feature Level</i> - Sub-features can run concurrently on separate sections (frames) of audio data</li>
+						</ul>
+					</section>
+
+					<section>
+						<h2>Plan Level Parallelism</h2>
+						<br>
+						<table style="width:100%">
+							<tr style="background-color:#DBC181">
+								<td style="text-align:center"> <sub>Proc</sub> \ <sup>Time</sup> </td>
+								<td/>
+								<td/>
+								<td/>
+							</tr>
+							<tr>
+								<td style="background-color:#DBC181"/>
+								<td style="text-align:center">FFT(<i>window</i><sub>1</sub>)</td>
+								<td style="text-align:center">Magnitude(<i>fft</i><sub>1</sub>)</td>
+								<td style="text-align:center">MFCC(<i>mag</i><sub>1</sub>)</td>
+							</tr>
+							<tr>
+								<td style="background-color:#DBC181"/>
+								<td/>
+								<td style="text-align:center">CQT(<i>fft</i><sub>1</sub>)</td>
+								<td style="text-align:center">Spec Shape(<i>mag</i><sub>1</sub>)</td>
+							</tr>
+						</table>
+						<br><br>
+						<small>
+							<b>Note:</b> These tables are used for illustrative purposes of where parallelism can occur.  They do not represent the actual thread scheduling or timing within the system.
+						</small>
+					</section>
+
+					<section>
+						<h2>Feature Level Parallelism</h2>
+						<br>
+						<table style="width:100%">
+							<tr style="background-color:#DBC181">
+								<td style="text-align:center"> <sub>Proc</sub> \ <sup>Time</sup> </td>
+								<td/>
+								<td/>
+								<td/>
+								<td/>
+							</tr>
+							<tr>
+								<td style="background-color:#DBC181"/>
+								<td style="text-align:center"><i>fr</i><sub>1</sub></td>
+								<td style="text-align:center">Window(<i>fr</i><sub>1</sub>)</td>
+								<td style="text-align:center">FFT(<i>win</i><sub>1</sub>)</td>
+								<td style="text-align:center">CQT(<i>fft</i><sub>1</sub>)</td>
+							</tr>
+							<tr>
+								<td style="background-color:#DBC181"/>
+								<td/>
+								<td style="text-align:center"><i>fr</i><sub>2</sub></td>
+								<td style="text-align:center">Window(<i>fr</i><sub>2</sub>)</td>
+								<td style="text-align:center">FFT(<i>win</i><sub>2</sub>)</td>
+							</tr>
+							<tr>
+								<td style="background-color:#DBC181"/>
+								<td/>
+								<td/>
+								<td style="text-align:center"><i>fr</i><sub>3</sub></td>
+								<td style="text-align:center">Window(<i>fr</i><sub>3</sub>)</td>
+							</tr>
+							<tr>
+								<td style="background-color:#DBC181"/>
+								<td/>
+								<td/>
+								<td/>
+								<td style="text-align:center"><i>fr</i><sub>4</sub></td>
+							</tr>
+						</table>
+						<br><br>
+						<small>
+							<b>Note:</b> These tables are used for illustrative purposes of where parallelism can occur.  They do not represent the actual thread scheduling or timing within the system.
+						</small>
+					</section>
+
+					<section>
+						<h2>Actor Model</h2>
+						<ul>
+							<li>Extraction plans are encoded in Actor hierarchies</li>
+							<li>Common messaging types
+								<ul>
+									<li><i>Splitter</i>* - Splits the work into smaller pieces (Files, Frames, etc.) for downstream processing</li>
+									<li><i>Transform</i>* - Most common type, providing simple mapping functions (Windowing, FFT, etc.)</li>
+									<li><i>Resequencer</i> - Takes a stream of potentially unordered messages and sends them out in order (CSV output, etc.)</li>
+									<li><i>Aggregator</i> - Run calculations across multiple frames (Spectral Flux, etc.)</li>
+								</ul>
+							</li>
+						</ul>
+						<br><br>
+						<small>
+							* Can be pooled with a round-robin routing strategy for highly concurrent systems
+						</small>
+					</section>
+				</section>
+
+				<section>
+					<section>
+						<h2>Distributed Feature Extraction</h2>
+						<ul>
+							<li>Based on Akka clustering</li>
+							<li>Decentralized and masterless</li>
+							<li>Distribution Setup
+								<ul>
+									<li>Localized Data</li>
+									<li>Distributed Data</li>
+								</ul>
+							</li>
+						</ul>
+					</section>
+
+					<section>
+						<h2>Local Data Setup</h2>
+						<ul>
+							<li>Audio files are evenly distributed across the cluster (local file system)</li>
+							<li>Extraction message is broadcast to all nodes</li>
+							<li>Overall time is limited by the slowest node</li>
+							<li>Not fault-tolerant or flexible</li>
+						</ul>
+					</section>
+
+					<section>
+						<h2>Distributed Data Setup</h2>
+						<ul>
+							<li>Audio files stored in Hadoop Distributed File System (HDFS)</li>
+							<li>Fault-tolerance through replication</li>
+							<li>Route extraction of individual files to different nodes</li>
+						</ul>
+					</section>
+
+					<section>
+						<h2>Distributed System Deployment</h2>
+						<img src="images/safe_deployment.png"/>
+					</section>
+				</section>
+
+				<section>
+					<h1>Results</h1>
+				</section>
+
+				<section>
+					<section>
+						<h2>Evaluation Dataset</h2>
+						<ul>
+							<li>1332 songs, 5120 minutes (over 85 hours) of audio</li>
+							<li>CD-Quality 44.1 KHz 16-bit stereo WAV format</li>
+						</ul>
+					</section>
+					<section>
+						<h3>Data Subset Statistics</h3>
+						<table style="width:100%">
+							<tr style="background-color:#DBC181;">
+								<td style="text-align:center">Files</td>
+								<td style="text-align:center">Total</td>
+								<td style="text-align:center">Max</td>
+								<td style="text-align:center">Min</td>
+								<td style="text-align:center">Avg</td>
+							</tr>
+							<tr>
+								
+								<td style="text-align:center"><div style="height:20px;"><small>1</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>2.5</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>2.5</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>2.5</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>2.5</small></div></td>
+							</tr>
+							<tr>
+								<td style="text-align:center"><div style="height:20px;"><small>2</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>5</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>2.5</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>2.5</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>2.5</small></div></td>
+							</tr>
+							<tr>
+								<td style="text-align:center"><div style="height:20px;"><small>4</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>10</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>3.49</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>1.51</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>2.5</small></div></td>
+							</tr>
+							<tr>
+								<td style="text-align:center"><div style="height:20px;"><small>9</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>20</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>4.04</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>1.09</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>2.22</small></div></td>
+							</tr>
+							<tr>
+								<td style="text-align:center"><div style="height:20px;"><small>17</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>40</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>4.56</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>0.92</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>2.35</small></div></td>
+							</tr>
+							<tr>
+								<td style="text-align:center"><div style="height:20px;"><small>35</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>80</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>4.56</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>0.59</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>2.29</small></div></td>
+							</tr>
+							<tr>
+								<td style="text-align:center"><div style="height:20px;"><small>61</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>160</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>5.91</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>0.59</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>2.62</small></div></td>
+							</tr>
+							<tr>
+								<td style="text-align:center"><div style="height:20px;"><small>107</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>320</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>6.98</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>0.41</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>2.99</small></div></td>
+							</tr>
+							<tr>
+								<td style="text-align:center"><div style="height:20px;"><small>200</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>640</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>11.35</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>0.41</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>3.2</small></div></td>
+							</tr>
+							<tr>
+								<td style="text-align:center"><div style="height:20px;"><small>371</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>1280</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>11.35</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>0.41</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>3.45</small></div></td>
+							</tr>
+							<tr>
+								<td style="text-align:center"><div style="height:20px;"><small>707</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>2560</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>15.72</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>0.23</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>3.62</small></div></td>
+							</tr>
+							<tr>
+								<td style="text-align:center"><div style="height:20px;"><small>1332</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>5120</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>32.25</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>0.11</small></div></td>
+								<td style="text-align:center"><div style="height:20px;"><small>3.84</small></div></td>
+							</tr>
+						</table>
+					</section>
+				</section>
+
+				<section>
+					<section>
+						<h2>System Evaluation</h2>
+						<ul>
+							<li><b>Feature Set:</b>
+								<ul>
+									<li>Mel-Frequency Cepstral Coefficients (13 coeff, 40 filters)</li>
+									<li>Spectral Flux</li>
+									<li>Spectral Shape (Centroid, Spread, Skewness, and Kurtosis)</li>
+								</ul>
+							</li>
+							<br>
+							<li><b>Libraries:</b>
+								<ul>
+									<li>Yaafe (version 0.64)</li>
+									<li>openSMILE (version 2.0-rc1)</li>
+									<li>Sonic Annotator (version 1.0)</li>
+									<li>Safe (version 0.1)</li>
+								</ul>
+							</li>
+						</ul>
+						<br><br><br>
+						<small>
+							<b>System</b>: Mac OS X 10.7.5, 2.5 GHz Intel Core i7 processor, 8 GB 1333 MHz DDR3 RAM
+						</small>
+					</section>
+					<section>
+						<h3>Benchmark Comparisons (1)</h3>
+						<img src="images/ex_times_1.png" width="60%" height="60%"/>
+					</section>
+					<section>
+						<h3>Benchmark Comparisons (2)</h3>
+						<img src="images/ex_times_2.png" width="60%" height="60%"/>
+					</section>
+					<section>
+						<h3>Benchmark Comparisons (3)</h3>
+						<img src="images/ex_times_3.png" width="60%" height="60%"/>
+					</section>
+					<section>
+						<h3>Dataflow Analysis</h3>
+						<img src="images/df_analysis_times_4.png" width="60%" height="60%"/>
+					</section>
+				</section>
+
+				<section>
+					<section>
+						<h2>Scalability Analysis</h2>
+						Universal Scalability Law
+						<br>
+						<img src="images/usl_eq_1.png" style="border:0px; box-shadow:none"/>
+						<br><br>
+						<ul>
+							<li>Contention &sigma; - Serial fraction of total execution</li>
+							<li>Coherency &kappa; - Inter-processor communication and overhead</li>
+						</ul>
+						<br><br>
+						Maximum Capacity
+						<br>
+						<img src="images/usl_eq_2.png" style="border:0px; box-shadow:none"/>
+					</section>
+					<section>
+						<h2>System Hardware</h2>
+						UCCS Research Cluster (VMWare vSphere 5 hypervisor)
+						<br><br>
+						<ul>
+							<li>8 HP machines w/ 2.4GHz Intel Xeon E5530 CPUs</li>
+							<li>64 Processor Cores</li>
+							<li>153 GHz total CPU</li>
+							<li>512 GB Memory</li>
+							<li>55 TB Connected Storage</li>
+						</ul>
+						<br><br>
+						<small>
+							All virtual machines running 64-bit CentOS 6.4 OS
+						</small>
+					</section>
+					<section>
+						<h2>Theoretical Processor Scalability</h2>
+						Actor Model = Simple scalability estimates
+						<br>
+						<img src="images/pct_times_5.png" width="50%" height="50%"/>
+						<br>
+						<small>
+							&sigma;<sub>1</sub> &asymp; 0.21, &nbsp; &sigma;<sub>2</sub> &asymp; 0.13
+						</small>
+					</section>
+					<section>
+						<h2>Processor Scalability</h2>
+						<img src="images/proc_times_6.png" width="60%", height="60%"/>
+					</section>
+					<section>
+						<h2>Cluster/Node Scalability (Local Audio)</h2>
+						<img src="images/node_times_7.png" width="60%", height="60%"/>
+					</section>
+					<section>
+						<h2>Cluster/Node Scalability (HDFS)</h2>
+						<img src="images/node_times_8.png" width="60%", height="60%"/>
+					</section>
+				</section>
+
+				<section>
+					<h1>Conclusions</h1>
+				</section>
+
+				<section>
+					<section>
+						<h2>Conclusions</h2>
+						<ul>
+							<li>Dataflow analysis for efficient feature extraction</li>
+							<li>Actor models for scalable feature extraction</li>
+							<li>Outperformed existing solutions in comparison benchmarks</li>
+							<li>Theoretical models for multi-processor and multi-node cluster scalability</li>
+						</ul>
+					</section>
+					<section>
+						<h2>Future Work</h2>
+						<ul>
+							<li>Reduce aggregation bottlenecks w/ consistent hashing router</li>
+							<li>Inhomogeneous clusters & probablistic load balancing</li>
+							<li>Additional fault-tolerance</li>
+						</ul>
+					</section>
+				</section>
+
+				<section>
+					<h1>The End</h1>
+				</section>
+
+				<!-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! END OF SLIDES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
+
+			</div>
+
+		</div>
+
+		<script src="../../reveal/lib/js/head.min.js"></script>
+		<script src="../../reveal/js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: '../../reveal/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: '../../reveal/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../reveal/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../reveal/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '../../reveal/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: '../../reveal/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
